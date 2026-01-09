@@ -37,42 +37,18 @@ Each domain crate now has self-contained backends behind feature flags.
 - [x] Set up CI tests for all backends
 - [x] Add integration tests (parity tests across backends)
 - [x] Exhaustive test matrix for all functions and operations across all backends
-- [ ] Documentation examples
+- [x] Documentation examples
 
-## In Progress
+## Future Work
 
-### Linear Algebra (sap-linalg)
-
-Design doc: `docs/linalg-design.md`
-
-Architecture decision: **core = syntax only, domains = semantics**.
-
-#### Design Decisions (resolved)
-
-- [x] Type checking: no separate pass, types propagate during eval/emit
-- [x] Function dispatch: runtime dispatch on `Value` variants
-- [x] AST changes: none needed, core stays untyped
-- [x] Literals: f32, type comes from context
-
-#### Implementation Plan
-- [x] Core scaffold: Value<T>, Type, eval, ops
-- [x] Vec2, Mat2 types and operations
-- [x] Vec3, Mat3 types and operations (feature = "3d", default)
-- [x] Vec4, Mat4 (feature = "4d")
-- [x] Operator dispatch (`*` for scale, matmul, etc.)
-- [x] Generic over numeric type (f32, f64 via num-traits)
-- [x] vec * mat (row vector convention) in addition to mat * vec
-- [x] Common linalg functions: dot, cross, length, normalize, distance, reflect, hadamard, lerp, mix
-- [x] Backend implementations (WGSL, Lua, Cranelift)
-
-#### Future Extensions (separate crates probably)
+### New Domain Crates
 
 - Complex numbers (2D rotations)
 - Quaternions (3D rotations)
 - Dual numbers (autodiff)
 - Rotors/spinors (geometric algebra)
 
-#### Nice to Have (maybe)
+### Nice to Have (maybe)
 
 - Expression normalization/simplification (constant folding, algebraic simplification)
   - Would live in domain crates, not core
