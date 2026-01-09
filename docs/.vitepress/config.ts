@@ -16,7 +16,7 @@ export default withMermaid(
     themeConfig: {
       nav: [
         { text: 'Guide', link: '/introduction' },
-        { text: 'Backends', link: '/backends' },
+        { text: 'Backends', link: '/backends/wgsl' },
         { text: 'Rhizome', link: 'https://rhizome-lab.github.io/' },
       ],
 
@@ -26,16 +26,21 @@ export default withMermaid(
             text: 'Guide',
             items: [
               { text: 'Introduction', link: '/introduction' },
-              { text: 'Getting Started', link: '/getting-started' },
+            ]
+          },
+          {
+            text: 'Crates',
+            items: [
+              { text: 'sap-scalar', link: '/scalar' },
+              { text: 'sap-linalg', link: '/linalg' },
             ]
           },
           {
             text: 'Backends',
             items: [
-              { text: 'Overview', link: '/backends' },
               { text: 'WGSL', link: '/backends/wgsl' },
-              { text: 'Cranelift', link: '/backends/cranelift' },
               { text: 'Lua', link: '/backends/lua' },
+              { text: 'Cranelift', link: '/backends/cranelift' },
             ]
           },
         ]
