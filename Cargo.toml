@@ -10,6 +10,7 @@ repository = "https://github.com/yourusername/sap"
 
 [workspace.dependencies]
 sap-core = { path = "crates/sap-core" }
+sap-std = { path = "crates/sap-std" }
 sap-wgsl = { path = "crates/sap-wgsl" }
 sap-cranelift = { path = "crates/sap-cranelift" }
 sap-lua = { path = "crates/sap-lua" }

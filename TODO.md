@@ -4,12 +4,12 @@
 
 ### Port from resin-expr
 
-- [ ] Port `resin-expr` core expression types and AST
-- [ ] Port `resin-expr-std` standard library functions
+- [x] Port `resin-expr` core expression types and AST
+- [x] Port `resin-expr-std` standard library functions (excluding noise)
 
 ### Core
 
-- [ ] Define expression AST (functions, numeric values)
+- [x] Define expression AST (functions, numeric values)
 - [ ] Implement type system for expressions
 - [ ] Add expression validation/normalization
 
@@ -21,6 +21,6 @@
 
 ### Infrastructure
 
-- [ ] Set up CI tests for all backends
+- [x] Set up CI tests for all backends
 - [ ] Add integration tests
 - [ ] Documentation examples

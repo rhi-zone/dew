@@ -1,0 +1,9 @@
+[package]
+name = "sap-std"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Standard function library for sap expressions"
+
+[dependencies]
+sap-core.workspace = true
