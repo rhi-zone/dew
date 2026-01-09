@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yourusername/sap"
+
+[workspace.dependencies]
+sap-core = { path = "crates/sap-core" }
+sap-wgsl = { path = "crates/sap-wgsl" }
+sap-cranelift = { path = "crates/sap-cranelift" }
+sap-lua = { path = "crates/sap-lua" }

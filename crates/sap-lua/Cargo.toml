@@ -1,0 +1,9 @@
+[package]
+name = "sap-lua"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Lua backend for sap expressions"
+
+[dependencies]
+sap-core.workspace = true
