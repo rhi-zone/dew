@@ -1,27 +1,78 @@
 //! Quaternion support for dew expressions.
 //!
-//! Provides quaternion types and operations for 3D rotations.
-//! Uses [x, y, z, w] component order (scalar last, GLM/glTF convention).
+//! Provides quaternion types and operations for 3D rotations. Uses [x, y, z, w]
+//! component order (scalar last, matching GLM/glTF convention).
 //!
-//! # Example
+//! # Quick Start
 //!
 //! ```
 //! use rhizome_dew_core::Expr;
 //! use rhizome_dew_quaternion::{Value, eval, quaternion_registry};
 //! use std::collections::HashMap;
 //!
+//! // Create a rotation quaternion and normalize it
 //! let expr = Expr::parse("normalize(q)").unwrap();
 //!
-//! let mut vars: HashMap<String, Value<f32>> = HashMap::new();
-//! vars.insert("q".to_string(), Value::Quaternion([0.0, 0.0, 0.0, 2.0]));
+//! let vars: HashMap<String, Value<f32>> = [
+//!     ("q".into(), Value::Quaternion([0.0, 0.0, 0.0, 2.0])),
+//! ].into();
 //!
-//! let registry = quaternion_registry();
-//! let result = eval(expr.ast(), &vars, &registry).unwrap();
+//! let result = eval(expr.ast(), &vars, &quaternion_registry()).unwrap();
 //! assert_eq!(result, Value::Quaternion([0.0, 0.0, 0.0, 1.0]));
 //! ```
+//!
+//! # Features
+//!
+//! | Feature     | Description                    |
+//! |-------------|--------------------------------|
+//! | `wgsl`      | WGSL shader code generation    |
+//! | `lua`       | Lua code generation            |
+//! | `cranelift` | Cranelift JIT compilation      |
+//!
+//! # Types
+//!
+//! | Type        | Description                      |
+//! |-------------|----------------------------------|
+//! | `Scalar`    | Real number                      |
+//! | `Vec3`      | 3D vector [x, y, z]              |
+//! | `Quaternion`| Quaternion [x, y, z, w]          |
+//!
+//! # Functions
+//!
+//! | Function              | Description                              |
+//! |-----------------------|------------------------------------------|
+//! | `conj(q)`             | Conjugate → quaternion                   |
+//! | `length(q)`           | Magnitude → scalar                       |
+//! | `normalize(q)`        | Unit quaternion → quaternion             |
+//! | `inverse(q)`          | Multiplicative inverse → quaternion      |
+//! | `dot(q1, q2)`         | Dot product → scalar                     |
+//! | `lerp(q1, q2, t)`     | Linear interpolation → quaternion        |
+//! | `slerp(q1, q2, t)`    | Spherical interpolation → quaternion     |
+//! | `axis_angle(axis, θ)` | From axis-angle → quaternion             |
+//! | `rotate(v, q)`        | Rotate vector by quaternion → vec3       |
+//!
+//! # Operators
+//!
+//! | Operation          | Result                          |
+//! |--------------------|---------------------------------|
+//! | `q1 * q2`          | Quaternion multiplication       |
+//! | `q * scalar`       | Scalar multiplication           |
+//! | `q1 + q2`          | Component-wise addition         |
+//! | `q1 - q2`          | Component-wise subtraction      |
+//! | `-q`               | Negation                        |
+//!
+//! # Component Order
+//!
+//! This crate uses [x, y, z, w] order (scalar last), matching:
+//! - GLM (OpenGL Mathematics)
+//! - glTF format
+//! - Unity (internal representation)
+//!
+//! Other conventions exist (w first), so be careful when interfacing
+//! with external libraries.
 
 use num_traits::Float;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
+use rhizome_dew_core::{Ast, BinOp, CompareOp, UnaryOp};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -202,6 +253,8 @@ pub enum Error {
         expected: Vec<Type>,
         got: Vec<Type>,
     },
+    /// Conditionals require scalar types.
+    UnsupportedTypeForConditional(Type),
 }
 
 impl std::fmt::Display for Error {
@@ -231,6 +284,9 @@ impl std::fmt::Display for Error {
                     f,
                     "function '{func}' expects types {expected:?}, got {got:?}"
                 )
+            }
+            Error::UnsupportedTypeForConditional(t) => {
+                write!(f, "conditionals require scalar type, got {t}")
             }
         }
     }
@@ -345,6 +401,63 @@ pub fn eval<T: Float>(
             }
 
             Ok(func.call(&arg_vals))
+        }
+
+        Ast::Compare(op, left, right) => {
+            let left_val = eval(left, vars, funcs)?;
+            let right_val = eval(right, vars, funcs)?;
+            match (&left_val, &right_val) {
+                (Value::Scalar(l), Value::Scalar(r)) => {
+                    let result = match op {
+                        CompareOp::Lt => *l < *r,
+                        CompareOp::Le => *l <= *r,
+                        CompareOp::Gt => *l > *r,
+                        CompareOp::Ge => *l >= *r,
+                        CompareOp::Eq => *l == *r,
+                        CompareOp::Ne => *l != *r,
+                    };
+                    Ok(Value::Scalar(if result { T::one() } else { T::zero() }))
+                }
+                _ => Err(Error::UnsupportedTypeForConditional(left_val.typ())),
+            }
+        }
+
+        Ast::And(left, right) => {
+            let left_val = eval(left, vars, funcs)?;
+            let right_val = eval(right, vars, funcs)?;
+            match (&left_val, &right_val) {
+                (Value::Scalar(l), Value::Scalar(r)) => {
+                    let result = !l.is_zero() && !r.is_zero();
+                    Ok(Value::Scalar(if result { T::one() } else { T::zero() }))
+                }
+                _ => Err(Error::UnsupportedTypeForConditional(left_val.typ())),
+            }
+        }
+
+        Ast::Or(left, right) => {
+            let left_val = eval(left, vars, funcs)?;
+            let right_val = eval(right, vars, funcs)?;
+            match (&left_val, &right_val) {
+                (Value::Scalar(l), Value::Scalar(r)) => {
+                    let result = !l.is_zero() || !r.is_zero();
+                    Ok(Value::Scalar(if result { T::one() } else { T::zero() }))
+                }
+                _ => Err(Error::UnsupportedTypeForConditional(left_val.typ())),
+            }
+        }
+
+        Ast::If(cond, then_ast, else_ast) => {
+            let cond_val = eval(cond, vars, funcs)?;
+            match cond_val {
+                Value::Scalar(c) => {
+                    if !c.is_zero() {
+                        eval(then_ast, vars, funcs)
+                    } else {
+                        eval(else_ast, vars, funcs)
+                    }
+                }
+                _ => Err(Error::UnsupportedTypeForConditional(cond_val.typ())),
+            }
         }
     }
 }

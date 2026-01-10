@@ -1,52 +1,151 @@
-//! dew-core: minimal expression language.
+//! # dew-core
 //!
-//! A simple expression parser that compiles string expressions into evaluable ASTs.
-//! Variables and functions are provided by the caller - nothing is hardcoded.
+//! Minimal expression language for procedural generation and creative coding.
 //!
-//! # Syntax
+//! This crate provides a simple expression parser that compiles string expressions
+//! into evaluable ASTs. Variables and functions are provided by the caller—nothing
+//! is hardcoded—making it suitable for user-facing expression inputs, shader
+//! parameter systems, and procedural generation pipelines.
 //!
-//! ```text
-//! // Operators (precedence low to high)
-//! a + b, a - b     // Addition, subtraction
-//! a * b, a / b     // Multiplication, division
-//! a ^ b            // Exponentiation
-//! -a               // Negation
+//! ## Design Philosophy
 //!
-//! // Variables (resolved at eval time)
-//! x, y, time       // Any identifier
+//! - **Minimal by default**: Core supports only arithmetic and variables
+//! - **Opt-in complexity**: Enable `cond` for conditionals, `func` for function calls
+//! - **No runtime dependencies**: Pure Rust, no allocations during evaluation
+//! - **Backend-agnostic**: AST can be compiled to WGSL, Lua, Cranelift, or evaluated directly
 //!
-//! // Functions (registered via ExprFn trait)
-//! sin(x), noise(x, y), etc.
+//! ## Features
+//!
+//! | Feature | Description |
+//! |---------|-------------|
+//! | `cond`  | Conditionals (`if`/`then`/`else`), comparisons (`<`, `<=`, etc.), boolean logic (`and`, `or`, `not`) |
+//! | `func`  | Function calls via [`ExprFn`] trait and [`FunctionRegistry`] |
+//!
+//! ## Syntax Reference
+//!
+//! ### Operators (by precedence, low to high)
+//!
+//! | Precedence | Operators | Description |
+//! |------------|-----------|-------------|
+//! | 1 | `if c then a else b` | Conditional (requires `cond`) |
+//! | 2 | `a or b` | Logical OR, short-circuit (requires `cond`) |
+//! | 3 | `a and b` | Logical AND, short-circuit (requires `cond`) |
+//! | 4 | `<` `<=` `>` `>=` `==` `!=` | Comparison (requires `cond`) |
+//! | 5 | `a + b`, `a - b` | Addition, subtraction |
+//! | 6 | `a * b`, `a / b` | Multiplication, division |
+//! | 7 | `a ^ b` | Exponentiation (right-associative) |
+//! | 8 | `-a`, `not a` | Negation, logical NOT (`not` requires `cond`) |
+//! | 9 | `(a)`, `f(a, b)` | Grouping, function calls (calls require `func`) |
+//!
+//! ### Literals and Identifiers
+//!
+//! - **Numbers**: `42`, `3.14`, `.5`, `1.0`
+//! - **Variables**: Any identifier (`x`, `time`, `my_var`)
+//! - **Functions**: Identifier followed by parentheses (`sin(x)`, `clamp(x, 0, 1)`)
+//!
+//! ### Boolean Semantics (with `cond` feature)
+//!
+//! - `0.0` is false, any non-zero value is true
+//! - Comparisons and boolean operators return `1.0` (true) or `0.0` (false)
+//! - `and`/`or` use short-circuit evaluation
+//!
+//! ## Examples
+//!
+//! ### Basic Arithmetic
+//!
 //! ```
-//!
-//! # Example
-//!
-//! ```
-//! use rhizome_dew_core::{Expr, FunctionRegistry};
+//! use rhizome_dew_core::Expr;
 //! use std::collections::HashMap;
 //!
-//! let registry = FunctionRegistry::new();
 //! let expr = Expr::parse("x * 2 + y").unwrap();
 //!
 //! let mut vars = HashMap::new();
 //! vars.insert("x".to_string(), 3.0);
 //! vars.insert("y".to_string(), 1.0);
 //!
+//! # #[cfg(not(feature = "func"))]
+//! let value = expr.eval(&vars).unwrap();
+//! # #[cfg(feature = "func")]
+//! # let value = expr.eval(&vars, &rhizome_dew_core::FunctionRegistry::new()).unwrap();
+//! assert_eq!(value, 7.0);  // 3 * 2 + 1 = 7
+//! ```
+//!
+//! ### Working with the AST
+//!
+//! ```
+//! use rhizome_dew_core::{Expr, Ast, BinOp};
+//!
+//! let expr = Expr::parse("a + b * c").unwrap();
+//!
+//! // Inspect the AST structure
+//! match expr.ast() {
+//!     Ast::BinOp(BinOp::Add, left, right) => {
+//!         assert!(matches!(left.as_ref(), Ast::Var(name) if name == "a"));
+//!         assert!(matches!(right.as_ref(), Ast::BinOp(BinOp::Mul, _, _)));
+//!     }
+//!     _ => panic!("unexpected AST structure"),
+//! }
+//! ```
+//!
+//! ### Custom Functions (with `func` feature)
+//!
+#![cfg_attr(feature = "func", doc = "```")]
+#![cfg_attr(not(feature = "func"), doc = "```ignore")]
+//! use rhizome_dew_core::{Expr, ExprFn, FunctionRegistry, Ast};
+//! use std::collections::HashMap;
+//!
+//! struct Clamp;
+//! impl ExprFn for Clamp {
+//!     fn name(&self) -> &str { "clamp" }
+//!     fn arg_count(&self) -> usize { 3 }
+//!     fn call(&self, args: &[f32]) -> f32 {
+//!         args[0].clamp(args[1], args[2])
+//!     }
+//! }
+//!
+//! let mut registry = FunctionRegistry::new();
+//! registry.register(Clamp);
+//!
+//! let expr = Expr::parse("clamp(x, 0, 1)").unwrap();
+//! let mut vars = HashMap::new();
+//! vars.insert("x".to_string(), 1.5);
+//!
 //! let value = expr.eval(&vars, &registry).unwrap();
-//! assert_eq!(value, 7.0);
+//! assert_eq!(value, 1.0);  // clamped to [0, 1]
+//! ```
+//!
+//! ### Conditionals (with `cond` feature)
+//!
+#![cfg_attr(feature = "cond", doc = "```")]
+#![cfg_attr(not(feature = "cond"), doc = "```ignore")]
+//! use rhizome_dew_core::Expr;
+//! use std::collections::HashMap;
+//!
+//! let expr = Expr::parse("if x > 0 then x else -x").unwrap();  // absolute value
+//!
+//! let mut vars = HashMap::new();
+//! vars.insert("x".to_string(), -5.0);
+//!
+//! # #[cfg(not(feature = "func"))]
+//! let value = expr.eval(&vars).unwrap();
+//! # #[cfg(feature = "func")]
+//! # let value = expr.eval(&vars, &rhizome_dew_core::FunctionRegistry::new()).unwrap();
+//! assert_eq!(value, 5.0);
 //! ```
 
 use std::collections::HashMap;
+#[cfg(feature = "func")]
 use std::sync::Arc;
 
 // ============================================================================
-// ExprFn trait and registry
+// ExprFn trait and registry (func feature)
 // ============================================================================
 
 /// A function that can be called from expressions.
 ///
 /// Implement this trait to add custom functions.
 /// Constants (like `pi`) can be 0-arg functions.
+#[cfg(feature = "func")]
 pub trait ExprFn: Send + Sync {
     /// Function name (e.g., "sin", "pi").
     fn name(&self) -> &str;
@@ -65,11 +164,13 @@ pub trait ExprFn: Send + Sync {
 }
 
 /// Registry of expression functions.
+#[cfg(feature = "func")]
 #[derive(Clone, Default)]
 pub struct FunctionRegistry {
     funcs: HashMap<String, Arc<dyn ExprFn>>,
 }
 
+#[cfg(feature = "func")]
 impl FunctionRegistry {
     /// Creates an empty registry.
     pub fn new() -> Self {
@@ -122,7 +223,9 @@ impl std::error::Error for ParseError {}
 #[derive(Debug, Clone, PartialEq)]
 pub enum EvalError {
     UnknownVariable(String),
+    #[cfg(feature = "func")]
     UnknownFunction(String),
+    #[cfg(feature = "func")]
     WrongArgCount {
         func: String,
         expected: usize,
@@ -134,7 +237,9 @@ impl std::fmt::Display for EvalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             EvalError::UnknownVariable(name) => write!(f, "unknown variable: '{}'", name),
+            #[cfg(feature = "func")]
             EvalError::UnknownFunction(name) => write!(f, "unknown function: '{}'", name),
+            #[cfg(feature = "func")]
             EvalError::WrongArgCount {
                 func,
                 expected,
@@ -167,7 +272,35 @@ enum Token {
     Caret,
     LParen,
     RParen,
+    #[cfg(feature = "func")]
     Comma,
+    // Comparison operators
+    #[cfg(feature = "cond")]
+    Lt,
+    #[cfg(feature = "cond")]
+    Le,
+    #[cfg(feature = "cond")]
+    Gt,
+    #[cfg(feature = "cond")]
+    Ge,
+    #[cfg(feature = "cond")]
+    Eq,
+    #[cfg(feature = "cond")]
+    Ne,
+    // Boolean operators (keywords)
+    #[cfg(feature = "cond")]
+    And,
+    #[cfg(feature = "cond")]
+    Or,
+    #[cfg(feature = "cond")]
+    Not,
+    // Conditional
+    #[cfg(feature = "cond")]
+    If,
+    #[cfg(feature = "cond")]
+    Then,
+    #[cfg(feature = "cond")]
+    Else,
     Eof,
 }
 
@@ -263,12 +396,67 @@ impl<'a> Lexer<'a> {
                 self.next_char();
                 Ok(Token::RParen)
             }
+            #[cfg(feature = "func")]
             ',' => {
                 self.next_char();
                 Ok(Token::Comma)
             }
+            #[cfg(feature = "cond")]
+            '<' => {
+                self.next_char();
+                if self.peek_char() == Some('=') {
+                    self.next_char();
+                    Ok(Token::Le)
+                } else {
+                    Ok(Token::Lt)
+                }
+            }
+            #[cfg(feature = "cond")]
+            '>' => {
+                self.next_char();
+                if self.peek_char() == Some('=') {
+                    self.next_char();
+                    Ok(Token::Ge)
+                } else {
+                    Ok(Token::Gt)
+                }
+            }
+            #[cfg(feature = "cond")]
+            '=' => {
+                self.next_char();
+                if self.peek_char() == Some('=') {
+                    self.next_char();
+                    Ok(Token::Eq)
+                } else {
+                    Err(ParseError::UnexpectedChar('='))
+                }
+            }
+            #[cfg(feature = "cond")]
+            '!' => {
+                self.next_char();
+                if self.peek_char() == Some('=') {
+                    self.next_char();
+                    Ok(Token::Ne)
+                } else {
+                    Err(ParseError::UnexpectedChar('!'))
+                }
+            }
             '0'..='9' | '.' => Ok(Token::Number(self.read_number()?)),
-            'a'..='z' | 'A'..='Z' | '_' => Ok(Token::Ident(self.read_ident())),
+            'a'..='z' | 'A'..='Z' | '_' => {
+                let ident = self.read_ident();
+                // Check for keywords
+                #[cfg(feature = "cond")]
+                match ident.as_str() {
+                    "and" => return Ok(Token::And),
+                    "or" => return Ok(Token::Or),
+                    "not" => return Ok(Token::Not),
+                    "if" => return Ok(Token::If),
+                    "then" => return Ok(Token::Then),
+                    "else" => return Ok(Token::Else),
+                    _ => {}
+                }
+                Ok(Token::Ident(ident))
+            }
             _ => Err(ParseError::UnexpectedChar(c)),
         }
     }
@@ -278,35 +466,108 @@ impl<'a> Lexer<'a> {
 // AST
 // ============================================================================
 
-/// AST node for expressions.
+/// Abstract syntax tree node for expressions.
+///
+/// The AST represents the structure of a parsed expression. Use [`Expr::ast()`]
+/// to access the AST after parsing.
+///
+/// # Variants
+///
+/// The available variants depend on enabled features:
+/// - **Always**: `Num`, `Var`, `BinOp`, `UnaryOp`
+/// - **With `func`**: `Call`
+/// - **With `cond`**: `Compare`, `And`, `Or`, `If`
+///
+/// # Example
+///
+/// ```
+/// use rhizome_dew_core::{Expr, Ast, BinOp};
+///
+/// let expr = Expr::parse("2 + 3").unwrap();
+/// match expr.ast() {
+///     Ast::BinOp(BinOp::Add, left, right) => {
+///         assert!(matches!(left.as_ref(), Ast::Num(2.0)));
+///         assert!(matches!(right.as_ref(), Ast::Num(3.0)));
+///     }
+///     _ => panic!("expected addition"),
+/// }
+/// ```
 #[derive(Debug, Clone)]
 pub enum Ast {
-    /// Numeric literal.
+    /// Numeric literal (e.g., `42`, `3.14`).
     Num(f32),
-    /// Variable reference (resolved at eval time).
+    /// Variable reference, resolved at evaluation time.
     Var(String),
-    /// Binary operation.
+    /// Binary operation: `left op right`.
     BinOp(BinOp, Box<Ast>, Box<Ast>),
-    /// Unary operation.
+    /// Unary operation: `op operand`.
     UnaryOp(UnaryOp, Box<Ast>),
-    /// Function call.
+    /// Function call: `name(arg1, arg2, ...)`.
+    #[cfg(feature = "func")]
     Call(String, Vec<Ast>),
+    /// Comparison: `left op right`, evaluates to `0.0` or `1.0`.
+    #[cfg(feature = "cond")]
+    Compare(CompareOp, Box<Ast>, Box<Ast>),
+    /// Logical AND with short-circuit evaluation.
+    #[cfg(feature = "cond")]
+    And(Box<Ast>, Box<Ast>),
+    /// Logical OR with short-circuit evaluation.
+    #[cfg(feature = "cond")]
+    Or(Box<Ast>, Box<Ast>),
+    /// Conditional: `if condition then then_expr else else_expr`.
+    #[cfg(feature = "cond")]
+    If(Box<Ast>, Box<Ast>, Box<Ast>),
 }
 
-/// Binary operators.
-#[derive(Debug, Clone, Copy, PartialEq)]
+/// Binary operators for arithmetic operations.
+///
+/// Used in [`Ast::BinOp`] to specify the operation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BinOp {
+    /// Addition (`+`).
     Add,
+    /// Subtraction (`-`).
     Sub,
+    /// Multiplication (`*`).
     Mul,
+    /// Division (`/`).
     Div,
+    /// Exponentiation (`^`), right-associative.
     Pow,
 }
 
+/// Comparison operators (requires `cond` feature).
+///
+/// Used in [`Ast::Compare`] to specify the comparison.
+/// All comparisons evaluate to `1.0` (true) or `0.0` (false).
+#[cfg(feature = "cond")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CompareOp {
+    /// Less than (`<`).
+    Lt,
+    /// Less than or equal (`<=`).
+    Le,
+    /// Greater than (`>`).
+    Gt,
+    /// Greater than or equal (`>=`).
+    Ge,
+    /// Equal (`==`).
+    Eq,
+    /// Not equal (`!=`).
+    Ne,
+}
+
 /// Unary operators.
-#[derive(Debug, Clone, Copy, PartialEq)]
+///
+/// Used in [`Ast::UnaryOp`] to specify the operation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UnaryOp {
+    /// Numeric negation (`-x`).
     Neg,
+    /// Logical NOT (`not x`), requires `cond` feature.
+    /// Returns `1.0` if operand is `0.0`, otherwise `0.0`.
+    #[cfg(feature = "cond")]
+    Not,
 }
 
 // ============================================================================
@@ -338,8 +599,94 @@ impl<'a> Parser<'a> {
         }
     }
 
+    // Precedence (low to high):
+    // 1. if/then/else (cond feature)
+    // 2. or (cond feature)
+    // 3. and (cond feature)
+    // 4. comparison (<, <=, >, >=, ==, !=) (cond feature)
+    // 5. add/sub
+    // 6. mul/div
+    // 7. power
+    // 8. unary (-, not)
+    // 9. primary
+
     fn parse_expr(&mut self) -> Result<Ast, ParseError> {
-        self.parse_add_sub()
+        #[cfg(feature = "cond")]
+        {
+            self.parse_if()
+        }
+        #[cfg(not(feature = "cond"))]
+        {
+            self.parse_add_sub()
+        }
+    }
+
+    #[cfg(feature = "cond")]
+    fn parse_if(&mut self) -> Result<Ast, ParseError> {
+        if self.current == Token::If {
+            self.advance()?;
+            let cond = self.parse_or()?;
+            self.expect(Token::Then)?;
+            let then_expr = self.parse_if()?; // Allow nested if in then branch
+            self.expect(Token::Else)?;
+            let else_expr = self.parse_if()?; // Right associative for chained if/else
+            Ok(Ast::If(
+                Box::new(cond),
+                Box::new(then_expr),
+                Box::new(else_expr),
+            ))
+        } else {
+            self.parse_or()
+        }
+    }
+
+    #[cfg(feature = "cond")]
+    fn parse_or(&mut self) -> Result<Ast, ParseError> {
+        let mut left = self.parse_and()?;
+
+        while self.current == Token::Or {
+            self.advance()?;
+            let right = self.parse_and()?;
+            left = Ast::Or(Box::new(left), Box::new(right));
+        }
+
+        Ok(left)
+    }
+
+    #[cfg(feature = "cond")]
+    fn parse_and(&mut self) -> Result<Ast, ParseError> {
+        let mut left = self.parse_compare()?;
+
+        while self.current == Token::And {
+            self.advance()?;
+            let right = self.parse_compare()?;
+            left = Ast::And(Box::new(left), Box::new(right));
+        }
+
+        Ok(left)
+    }
+
+    #[cfg(feature = "cond")]
+    fn parse_compare(&mut self) -> Result<Ast, ParseError> {
+        let left = self.parse_add_sub()?;
+
+        let op = match &self.current {
+            Token::Lt => Some(CompareOp::Lt),
+            Token::Le => Some(CompareOp::Le),
+            Token::Gt => Some(CompareOp::Gt),
+            Token::Ge => Some(CompareOp::Ge),
+            Token::Eq => Some(CompareOp::Eq),
+            Token::Ne => Some(CompareOp::Ne),
+            _ => None,
+        };
+
+        if let Some(op) = op {
+            self.advance()?;
+            let right = self.parse_add_sub()?;
+            Ok(Ast::Compare(op, Box::new(left), Box::new(right)))
+        } else {
+            Ok(left)
+        }
     }
 
     fn parse_add_sub(&mut self) -> Result<Ast, ParseError> {
@@ -399,12 +746,19 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_unary(&mut self) -> Result<Ast, ParseError> {
-        if self.current == Token::Minus {
-            self.advance()?;
-            let inner = self.parse_unary()?;
-            Ok(Ast::UnaryOp(UnaryOp::Neg, Box::new(inner)))
-        } else {
-            self.parse_primary()
+        match &self.current {
+            Token::Minus => {
+                self.advance()?;
+                let inner = self.parse_unary()?;
+                Ok(Ast::UnaryOp(UnaryOp::Neg, Box::new(inner)))
+            }
+            #[cfg(feature = "cond")]
+            Token::Not => {
+                self.advance()?;
+                let inner = self.parse_unary()?;
+                Ok(Ast::UnaryOp(UnaryOp::Not, Box::new(inner)))
+            }
+            _ => self.parse_primary(),
         }
     }
 
@@ -419,7 +773,8 @@ impl<'a> Parser<'a> {
                 let name = name.clone();
                 self.advance()?;
 
-                // Check if it's a function call
+                // Check if it's a function call (func feature)
+                #[cfg(feature = "func")]
                 if self.current == Token::LParen {
                     self.advance()?;
                     let mut args = Vec::new();
@@ -431,11 +786,11 @@ impl<'a> Parser<'a> {
                         }
                     }
                     self.expect(Token::RParen)?;
-                    Ok(Ast::Call(name, args))
-                } else {
-                    // It's a variable
-                    Ok(Ast::Var(name))
+                    return Ok(Ast::Call(name, args));
                 }
+
+                // It's a variable
+                Ok(Ast::Var(name))
             }
             Token::LParen => {
                 self.advance()?;
@@ -453,7 +808,35 @@ impl<'a> Parser<'a> {
 // Expression
 // ============================================================================
 
-/// A compiled expression that can be evaluated.
+/// A parsed expression that can be evaluated or inspected.
+///
+/// `Expr` is the main entry point for the expression language. Parse a string
+/// with [`Expr::parse()`], then either evaluate it with [`Expr::eval()`] or
+/// inspect the AST with [`Expr::ast()`].
+///
+/// # Example
+///
+/// ```
+/// use rhizome_dew_core::Expr;
+/// use std::collections::HashMap;
+///
+/// // Parse an expression
+/// let expr = Expr::parse("x^2 + 2*x + 1").unwrap();
+///
+/// // Evaluate with different variable values
+/// let mut vars = HashMap::new();
+/// vars.insert("x".to_string(), 3.0);
+/// # #[cfg(not(feature = "func"))]
+/// assert_eq!(expr.eval(&vars).unwrap(), 16.0);  // 9 + 6 + 1
+/// # #[cfg(feature = "func")]
+/// # assert_eq!(expr.eval(&vars, &rhizome_dew_core::FunctionRegistry::new()).unwrap(), 16.0);
+///
+/// vars.insert("x".to_string(), 0.0);
+/// # #[cfg(not(feature = "func"))]
+/// assert_eq!(expr.eval(&vars).unwrap(), 1.0);   // 0 + 0 + 1
+/// # #[cfg(feature = "func")]
+/// # assert_eq!(expr.eval(&vars, &rhizome_dew_core::FunctionRegistry::new()).unwrap(), 1.0);
+/// ```
 #[derive(Debug, Clone)]
 pub struct Expr {
     ast: Ast,
@@ -461,6 +844,29 @@ pub struct Expr {
 
 impl Expr {
     /// Parses an expression from a string.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ParseError`] if the input is not a valid expression:
+    /// - [`ParseError::UnexpectedChar`] for invalid characters
+    /// - [`ParseError::UnexpectedEnd`] for incomplete expressions
+    /// - [`ParseError::UnexpectedToken`] for syntax errors
+    /// - [`ParseError::InvalidNumber`] for malformed numeric literals
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rhizome_dew_core::{Expr, ParseError};
+    ///
+    /// // Valid expression
+    /// assert!(Expr::parse("1 + 2").is_ok());
+    ///
+    /// // Invalid: unexpected character
+    /// assert!(matches!(Expr::parse("1 @ 2"), Err(ParseError::UnexpectedChar('@'))));
+    ///
+    /// // Invalid: incomplete expression
+    /// assert!(matches!(Expr::parse("1 +"), Err(ParseError::UnexpectedEnd)));
+    /// ```
     pub fn parse(input: &str) -> Result<Self, ParseError> {
         let mut parser = Parser::new(input)?;
         let ast = parser.parse_expr()?;
@@ -470,12 +876,23 @@ impl Expr {
         Ok(Self { ast })
     }
 
-    /// Returns a reference to the AST.
+    /// Returns a reference to the parsed AST.
+    ///
+    /// Use this to inspect the expression structure or to compile it to
+    /// a different target (WGSL, Lua, etc.).
     pub fn ast(&self) -> &Ast {
         &self.ast
     }
 
-    /// Evaluates the expression with given variables and functions.
+    /// Evaluates the expression with the given variables and function registry.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EvalError`] if evaluation fails:
+    /// - [`EvalError::UnknownVariable`] if a variable is not in `vars`
+    /// - [`EvalError::UnknownFunction`] if a function is not in `funcs`
+    /// - [`EvalError::WrongArgCount`] if a function is called with wrong arity
+    #[cfg(feature = "func")]
     pub fn eval(
         &self,
         vars: &HashMap<String, f32>,
@@ -483,8 +900,21 @@ impl Expr {
     ) -> Result<f32, EvalError> {
         eval_ast(&self.ast, vars, funcs)
     }
+
+    /// Evaluates the expression with the given variables.
+    ///
+    /// This version is available when the `func` feature is disabled.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EvalError::UnknownVariable`] if a variable is not in `vars`.
+    #[cfg(not(feature = "func"))]
+    pub fn eval(&self, vars: &HashMap<String, f32>) -> Result<f32, EvalError> {
+        eval_ast(&self.ast, vars)
+    }
 }
 
+#[cfg(feature = "func")]
 fn eval_ast(
     ast: &Ast,
     vars: &HashMap<String, f32>,
@@ -511,7 +941,58 @@ fn eval_ast(
             let v = eval_ast(inner, vars, funcs)?;
             Ok(match op {
                 UnaryOp::Neg => -v,
+                #[cfg(feature = "cond")]
+                UnaryOp::Not => {
+                    if v == 0.0 {
+                        1.0
+                    } else {
+                        0.0
+                    }
+                }
             })
+        }
+        #[cfg(feature = "cond")]
+        Ast::Compare(op, l, r) => {
+            let l = eval_ast(l, vars, funcs)?;
+            let r = eval_ast(r, vars, funcs)?;
+            let result = match op {
+                CompareOp::Lt => l < r,
+                CompareOp::Le => l <= r,
+                CompareOp::Gt => l > r,
+                CompareOp::Ge => l >= r,
+                CompareOp::Eq => l == r,
+                CompareOp::Ne => l != r,
+            };
+            Ok(if result { 1.0 } else { 0.0 })
+        }
+        #[cfg(feature = "cond")]
+        Ast::And(l, r) => {
+            let l = eval_ast(l, vars, funcs)?;
+            if l == 0.0 {
+                Ok(0.0) // Short-circuit
+            } else {
+                let r = eval_ast(r, vars, funcs)?;
+                Ok(if r != 0.0 { 1.0 } else { 0.0 })
+            }
+        }
+        #[cfg(feature = "cond")]
+        Ast::Or(l, r) => {
+            let l = eval_ast(l, vars, funcs)?;
+            if l != 0.0 {
+                Ok(1.0) // Short-circuit
+            } else {
+                let r = eval_ast(r, vars, funcs)?;
+                Ok(if r != 0.0 { 1.0 } else { 0.0 })
+            }
+        }
+        #[cfg(feature = "cond")]
+        Ast::If(cond, then_expr, else_expr) => {
+            let cond = eval_ast(cond, vars, funcs)?;
+            if cond != 0.0 {
+                eval_ast(then_expr, vars, funcs)
+            } else {
+                eval_ast(else_expr, vars, funcs)
+            }
         }
         Ast::Call(name, args) => {
             let func = funcs
@@ -536,6 +1017,85 @@ fn eval_ast(
     }
 }
 
+#[cfg(not(feature = "func"))]
+fn eval_ast(ast: &Ast, vars: &HashMap<String, f32>) -> Result<f32, EvalError> {
+    match ast {
+        Ast::Num(n) => Ok(*n),
+        Ast::Var(name) => vars
+            .get(name)
+            .copied()
+            .ok_or_else(|| EvalError::UnknownVariable(name.clone())),
+        Ast::BinOp(op, l, r) => {
+            let l = eval_ast(l, vars)?;
+            let r = eval_ast(r, vars)?;
+            Ok(match op {
+                BinOp::Add => l + r,
+                BinOp::Sub => l - r,
+                BinOp::Mul => l * r,
+                BinOp::Div => l / r,
+                BinOp::Pow => l.powf(r),
+            })
+        }
+        Ast::UnaryOp(op, inner) => {
+            let v = eval_ast(inner, vars)?;
+            Ok(match op {
+                UnaryOp::Neg => -v,
+                #[cfg(feature = "cond")]
+                UnaryOp::Not => {
+                    if v == 0.0 {
+                        1.0
+                    } else {
+                        0.0
+                    }
+                }
+            })
+        }
+        #[cfg(feature = "cond")]
+        Ast::Compare(op, l, r) => {
+            let l = eval_ast(l, vars)?;
+            let r = eval_ast(r, vars)?;
+            let result = match op {
+                CompareOp::Lt => l < r,
+                CompareOp::Le => l <= r,
+                CompareOp::Gt => l > r,
+                CompareOp::Ge => l >= r,
+                CompareOp::Eq => l == r,
+                CompareOp::Ne => l != r,
+            };
+            Ok(if result { 1.0 } else { 0.0 })
+        }
+        #[cfg(feature = "cond")]
+        Ast::And(l, r) => {
+            let l = eval_ast(l, vars)?;
+            if l == 0.0 {
+                Ok(0.0) // Short-circuit
+            } else {
+                let r = eval_ast(r, vars)?;
+                Ok(if r != 0.0 { 1.0 } else { 0.0 })
+            }
+        }
+        #[cfg(feature = "cond")]
+        Ast::Or(l, r) => {
+            let l = eval_ast(l, vars)?;
+            if l != 0.0 {
+                Ok(1.0) // Short-circuit
+            } else {
+                let r = eval_ast(r, vars)?;
+                Ok(if r != 0.0 { 1.0 } else { 0.0 })
+            }
+        }
+        #[cfg(feature = "cond")]
+        Ast::If(cond, then_expr, else_expr) => {
+            let cond = eval_ast(cond, vars)?;
+            if cond != 0.0 {
+                eval_ast(then_expr, vars)
+            } else {
+                eval_ast(else_expr, vars)
+            }
+        }
+    }
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
@@ -544,11 +1104,19 @@ fn eval_ast(
 mod tests {
     use super::*;
 
+    #[cfg(feature = "func")]
     fn eval(expr_str: &str, vars: &[(&str, f32)]) -> f32 {
         let registry = FunctionRegistry::new();
         let expr = Expr::parse(expr_str).unwrap();
         let var_map: HashMap<String, f32> = vars.iter().map(|(k, v)| (k.to_string(), *v)).collect();
         expr.eval(&var_map, &registry).unwrap()
+    }
+
+    #[cfg(not(feature = "func"))]
+    fn eval(expr_str: &str, vars: &[(&str, f32)]) -> f32 {
+        let expr = Expr::parse(expr_str).unwrap();
+        let var_map: HashMap<String, f32> = vars.iter().map(|(k, v)| (k.to_string(), *v)).collect();
+        expr.eval(&var_map).unwrap()
     }
 
     #[test]
@@ -597,6 +1165,7 @@ mod tests {
         assert_eq!(eval("2 ^ 3", &[]), 8.0);
     }
 
+    #[cfg(feature = "func")]
     #[test]
     fn test_unknown_variable() {
         let registry = FunctionRegistry::new();
@@ -606,6 +1175,16 @@ mod tests {
         assert!(matches!(result, Err(EvalError::UnknownVariable(_))));
     }
 
+    #[cfg(not(feature = "func"))]
+    #[test]
+    fn test_unknown_variable() {
+        let expr = Expr::parse("unknown").unwrap();
+        let vars = HashMap::new();
+        let result = expr.eval(&vars);
+        assert!(matches!(result, Err(EvalError::UnknownVariable(_))));
+    }
+
+    #[cfg(feature = "func")]
     #[test]
     fn test_unknown_function() {
         let registry = FunctionRegistry::new();
@@ -615,6 +1194,7 @@ mod tests {
         assert!(matches!(result, Err(EvalError::UnknownFunction(_))));
     }
 
+    #[cfg(feature = "func")]
     #[test]
     fn test_custom_function() {
         struct Double;
@@ -638,6 +1218,7 @@ mod tests {
         assert_eq!(expr.eval(&vars, &registry).unwrap(), 10.0);
     }
 
+    #[cfg(feature = "func")]
     #[test]
     fn test_zero_arg_function() {
         struct Pi;
@@ -661,6 +1242,7 @@ mod tests {
         assert!((expr.eval(&vars, &registry).unwrap() - std::f32::consts::PI).abs() < 0.001);
     }
 
+    #[cfg(feature = "func")]
     #[test]
     fn test_wrong_arg_count() {
         struct OneArg;
@@ -685,6 +1267,7 @@ mod tests {
         assert!(matches!(result, Err(EvalError::WrongArgCount { .. })));
     }
 
+    #[cfg(feature = "func")]
     #[test]
     fn test_complex_expression() {
         struct Add;
@@ -706,5 +1289,275 @@ mod tests {
         let expr = Expr::parse("add(x * 2, y + 1)").unwrap();
         let vars: HashMap<String, f32> = [("x".to_string(), 3.0), ("y".to_string(), 4.0)].into();
         assert_eq!(expr.eval(&vars, &registry).unwrap(), 11.0); // (3*2) + (4+1) = 11
+    }
+
+    // Comparison tests (cond feature)
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_compare_lt() {
+        assert_eq!(eval("1 < 2", &[]), 1.0);
+        assert_eq!(eval("2 < 1", &[]), 0.0);
+        assert_eq!(eval("1 < 1", &[]), 0.0);
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_compare_le() {
+        assert_eq!(eval("1 <= 2", &[]), 1.0);
+        assert_eq!(eval("2 <= 1", &[]), 0.0);
+        assert_eq!(eval("1 <= 1", &[]), 1.0);
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_compare_gt() {
+        assert_eq!(eval("2 > 1", &[]), 1.0);
+        assert_eq!(eval("1 > 2", &[]), 0.0);
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_compare_ge() {
+        assert_eq!(eval("2 >= 1", &[]), 1.0);
+        assert_eq!(eval("1 >= 1", &[]), 1.0);
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_compare_eq() {
+        assert_eq!(eval("1 == 1", &[]), 1.0);
+        assert_eq!(eval("1 == 2", &[]), 0.0);
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_compare_ne() {
+        assert_eq!(eval("1 != 2", &[]), 1.0);
+        assert_eq!(eval("1 != 1", &[]), 0.0);
+    }
+
+    // Boolean logic tests (cond feature)
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_and() {
+        assert_eq!(eval("1 and 1", &[]), 1.0);
+        assert_eq!(eval("1 and 0", &[]), 0.0);
+        assert_eq!(eval("0 and 1", &[]), 0.0);
+        assert_eq!(eval("0 and 0", &[]), 0.0);
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_or() {
+        assert_eq!(eval("1 or 1", &[]), 1.0);
+        assert_eq!(eval("1 or 0", &[]), 1.0);
+        assert_eq!(eval("0 or 1", &[]), 1.0);
+        assert_eq!(eval("0 or 0", &[]), 0.0);
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_not() {
+        assert_eq!(eval("not 0", &[]), 1.0);
+        assert_eq!(eval("not 1", &[]), 0.0);
+        assert_eq!(eval("not 5", &[]), 0.0); // any non-zero is truthy
+    }
+
+    // Conditional tests (cond feature)
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_if_then_else() {
+        assert_eq!(eval("if 1 then 10 else 20", &[]), 10.0);
+        assert_eq!(eval("if 0 then 10 else 20", &[]), 20.0);
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_if_with_comparison() {
+        assert_eq!(eval("if x > 5 then 1 else 0", &[("x", 10.0)]), 1.0);
+        assert_eq!(eval("if x > 5 then 1 else 0", &[("x", 3.0)]), 0.0);
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_nested_if() {
+        // if x > 0 then (if x > 10 then 2 else 1) else 0
+        assert_eq!(
+            eval(
+                "if x > 0 then if x > 10 then 2 else 1 else 0",
+                &[("x", 15.0)]
+            ),
+            2.0
+        );
+        assert_eq!(
+            eval(
+                "if x > 0 then if x > 10 then 2 else 1 else 0",
+                &[("x", 5.0)]
+            ),
+            1.0
+        );
+        assert_eq!(
+            eval(
+                "if x > 0 then if x > 10 then 2 else 1 else 0",
+                &[("x", -1.0)]
+            ),
+            0.0
+        );
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_compound_boolean() {
+        assert_eq!(eval("x > 0 and x < 10", &[("x", 5.0)]), 1.0);
+        assert_eq!(eval("x > 0 and x < 10", &[("x", 15.0)]), 0.0);
+        assert_eq!(eval("x < 0 or x > 10", &[("x", 5.0)]), 0.0);
+        assert_eq!(eval("x < 0 or x > 10", &[("x", 15.0)]), 1.0);
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_precedence_compare_vs_arithmetic() {
+        // 1 + 2 < 4 should be (1 + 2) < 4, not 1 + (2 < 4)
+        assert_eq!(eval("1 + 2 < 4", &[]), 1.0);
+        assert_eq!(eval("1 + 2 < 3", &[]), 0.0);
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_precedence_and_vs_or() {
+        // a or b and c should be a or (b and c)
+        assert_eq!(eval("1 or 0 and 0", &[]), 1.0); // 1 or (0 and 0) = 1 or 0 = 1
+        assert_eq!(eval("0 or 1 and 1", &[]), 1.0); // 0 or (1 and 1) = 0 or 1 = 1
+        assert_eq!(eval("0 or 0 and 1", &[]), 0.0); // 0 or (0 and 1) = 0 or 0 = 0
+    }
+}
+
+// ============================================================================
+// Property-based tests (proptest)
+// ============================================================================
+
+#[cfg(test)]
+mod proptest_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// Strategy for generating valid expression strings
+    fn expr_strategy() -> impl Strategy<Value = String> {
+        // Generate simple arithmetic expressions
+        let num = prop::num::f32::NORMAL.prop_map(|n| format!("{:.6}", n));
+        let var = prop::sample::select(vec!["x", "y", "z", "a", "b"]).prop_map(String::from);
+
+        // Operators
+        let binop = prop::sample::select(vec!["+", "-", "*", "/"]);
+
+        // Combine into expressions
+        prop::strategy::Union::new(vec![
+            num.clone().boxed(),
+            var.clone().boxed(),
+            (num.clone(), binop.clone(), num.clone())
+                .prop_map(|(l, op, r)| format!("({} {} {})", l, op, r))
+                .boxed(),
+            (var.clone(), binop.clone(), num.clone())
+                .prop_map(|(l, op, r)| format!("({} {} {})", l, op, r))
+                .boxed(),
+            (num.clone(), binop, var.clone())
+                .prop_map(|(l, op, r)| format!("({} {} {})", l, op, r))
+                .boxed(),
+        ])
+    }
+
+    proptest! {
+        /// Parser should not panic on arbitrary input
+        #[test]
+        fn parse_never_panics(s in ".*") {
+            // Just check that parsing doesn't panic, result can be Ok or Err
+            let _ = Expr::parse(&s);
+        }
+
+        /// Valid expressions should parse successfully
+        #[test]
+        fn valid_expr_parses(expr in expr_strategy()) {
+            let result = Expr::parse(&expr);
+            prop_assert!(result.is_ok(), "Failed to parse: {}", expr);
+        }
+
+        /// Numbers round-trip correctly
+        #[test]
+        fn number_roundtrip(n in prop::num::f32::NORMAL) {
+            let expr_str = format!("{:.6}", n);
+            if let Ok(expr) = Expr::parse(&expr_str) {
+                // The parsed number should be close to the original
+                if let Ast::Num(parsed) = expr.ast() {
+                    let diff = (parsed - n).abs();
+                    prop_assert!(diff < 0.001 || diff / n.abs() < 0.001,
+                        "Number mismatch: {} vs {}", n, parsed);
+                }
+            }
+        }
+
+        /// Evaluation with valid variables shouldn't panic
+        #[test]
+        #[cfg(not(feature = "func"))]
+        fn eval_with_vars_no_panic(
+            x in prop::num::f32::NORMAL,
+            y in prop::num::f32::NORMAL,
+            expr in expr_strategy()
+        ) {
+            if let Ok(parsed) = Expr::parse(&expr) {
+                let vars: HashMap<String, f32> = [
+                    ("x".into(), x),
+                    ("y".into(), y),
+                    ("z".into(), 1.0),
+                    ("a".into(), 2.0),
+                    ("b".into(), 3.0),
+                ].into();
+                // Just check it doesn't panic, result can be anything (including NaN/Inf)
+                let _ = parsed.eval(&vars);
+            }
+        }
+
+        /// Evaluation with valid variables shouldn't panic (func feature)
+        #[test]
+        #[cfg(feature = "func")]
+        fn eval_with_vars_no_panic_func(
+            x in prop::num::f32::NORMAL,
+            y in prop::num::f32::NORMAL,
+            expr in expr_strategy()
+        ) {
+            if let Ok(parsed) = Expr::parse(&expr) {
+                let vars: HashMap<String, f32> = [
+                    ("x".into(), x),
+                    ("y".into(), y),
+                    ("z".into(), 1.0),
+                    ("a".into(), 2.0),
+                    ("b".into(), 3.0),
+                ].into();
+                let registry = FunctionRegistry::new();
+                let _ = parsed.eval(&vars, &registry);
+            }
+        }
+
+        /// Negation is its own inverse
+        #[test]
+        #[cfg(not(feature = "func"))]
+        fn negation_inverse(n in prop::num::f32::NORMAL) {
+            let expr = Expr::parse(&format!("--{:.6}", n)).unwrap();
+            let vars = HashMap::new();
+            let result = expr.eval(&vars).unwrap();
+            prop_assert!((result - n).abs() < 0.01,
+                "Double negation failed: --{} = {}", n, result);
+        }
+
+        /// Negation is its own inverse (func feature)
+        #[test]
+        #[cfg(feature = "func")]
+        fn negation_inverse_func(n in prop::num::f32::NORMAL) {
+            let expr = Expr::parse(&format!("--{:.6}", n)).unwrap();
+            let vars = HashMap::new();
+            let registry = FunctionRegistry::new();
+            let result = expr.eval(&vars, &registry).unwrap();
+            prop_assert!((result - n).abs() < 0.01,
+                "Double negation failed: --{} = {}", n, result);
+        }
     }
 }

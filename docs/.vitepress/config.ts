@@ -31,8 +31,11 @@ export default withMermaid(
           {
             text: 'Crates',
             items: [
+              { text: 'dew-core', link: '/core' },
               { text: 'dew-scalar', link: '/scalar' },
               { text: 'dew-linalg', link: '/linalg' },
+              { text: 'dew-complex', link: '/complex' },
+              { text: 'dew-quaternion', link: '/quaternion' },
             ]
           },
           {

@@ -3,7 +3,7 @@
 //! Provides complex number types and operations for signal processing,
 //! 2D rotations, and general complex arithmetic.
 //!
-//! # Example
+//! # Quick Start
 //!
 //! ```
 //! use rhizome_dew_core::Expr;
@@ -12,18 +12,60 @@
 //!
 //! let expr = Expr::parse("a * b").unwrap();
 //!
-//! let mut vars: HashMap<String, Value<f32>> = HashMap::new();
-//! vars.insert("a".to_string(), Value::Complex([1.0, 2.0]));  // 1 + 2i
-//! vars.insert("b".to_string(), Value::Complex([3.0, 4.0]));  // 3 + 4i
+//! let vars: HashMap<String, Value<f32>> = [
+//!     ("a".into(), Value::Complex([1.0, 2.0])),  // 1 + 2i
+//!     ("b".into(), Value::Complex([3.0, 4.0])),  // 3 + 4i
+//! ].into();
 //!
-//! let registry = complex_registry();
-//! let result = eval(expr.ast(), &vars, &registry).unwrap();
-//! // (1+2i)(3+4i) = 3 + 4i + 6i + 8i² = 3 + 10i - 8 = -5 + 10i
+//! let result = eval(expr.ast(), &vars, &complex_registry()).unwrap();
+//! // (1+2i)(3+4i) = -5 + 10i
 //! assert_eq!(result, Value::Complex([-5.0, 10.0]));
 //! ```
+//!
+//! # Features
+//!
+//! | Feature     | Description                    |
+//! |-------------|--------------------------------|
+//! | `wgsl`      | WGSL shader code generation    |
+//! | `lua`       | Lua code generation            |
+//! | `cranelift` | Cranelift JIT compilation      |
+//!
+//! # Types
+//!
+//! | Type      | Description                     |
+//! |-----------|---------------------------------|
+//! | `Scalar`  | Real number                     |
+//! | `Complex` | Complex number [re, im]         |
+//!
+//! # Functions
+//!
+//! | Function         | Description                              |
+//! |------------------|------------------------------------------|
+//! | `re(z)`          | Real part → scalar                       |
+//! | `im(z)`          | Imaginary part → scalar                  |
+//! | `conj(z)`        | Conjugate (a - bi) → complex             |
+//! | `abs(z)`         | Magnitude \|z\| → scalar                 |
+//! | `arg(z)`         | Argument (angle) → scalar                |
+//! | `norm(z)`        | Squared magnitude → scalar               |
+//! | `exp(z)`         | Complex exponential → complex            |
+//! | `log(z)`         | Complex logarithm → complex              |
+//! | `sqrt(z)`        | Complex square root → complex            |
+//! | `pow(z, n)`      | Complex power → complex                  |
+//! | `polar(r, theta)`| From polar form → complex                |
+//!
+//! # Operators
+//!
+//! | Operation          | Result                          |
+//! |--------------------|---------------------------------|
+//! | `z1 + z2`          | Complex addition                |
+//! | `z1 - z2`          | Complex subtraction             |
+//! | `z1 * z2`          | Complex multiplication          |
+//! | `z1 / z2`          | Complex division                |
+//! | `z * scalar`       | Scalar multiplication           |
+//! | `-z`               | Negation                        |
 
 use num_traits::Float;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
+use rhizome_dew_core::{Ast, BinOp, CompareOp, UnaryOp};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -165,6 +207,8 @@ pub enum Error {
     BinaryTypeMismatch { op: BinOp, left: Type, right: Type },
     /// Type mismatch for unary operation.
     UnaryTypeMismatch { op: UnaryOp, operand: Type },
+    /// General type mismatch (for conditionals).
+    TypeMismatch { expected: Type, got: Type },
     /// Wrong number of arguments to function.
     WrongArgCount {
         func: String,
@@ -189,6 +233,9 @@ impl std::fmt::Display for Error {
             }
             Error::UnaryTypeMismatch { op, operand } => {
                 write!(f, "cannot apply {op:?} to {operand}")
+            }
+            Error::TypeMismatch { expected, got } => {
+                write!(f, "expected {expected}, got {got}")
             }
             Error::WrongArgCount {
                 func,
@@ -291,6 +338,99 @@ pub fn eval<T: Float>(
         Ast::UnaryOp(op, inner) => {
             let val = eval(inner, vars, funcs)?;
             ops::apply_unaryop(*op, val)
+        }
+
+        Ast::Compare(op, left, right) => {
+            let left_val = eval(left, vars, funcs)?;
+            let right_val = eval(right, vars, funcs)?;
+            // Comparisons only supported for scalars
+            match (left_val, right_val) {
+                (Value::Scalar(l), Value::Scalar(r)) => {
+                    let result = match op {
+                        CompareOp::Lt => l < r,
+                        CompareOp::Le => l <= r,
+                        CompareOp::Gt => l > r,
+                        CompareOp::Ge => l >= r,
+                        CompareOp::Eq => l == r,
+                        CompareOp::Ne => l != r,
+                    };
+                    Ok(Value::Scalar(if result { T::one() } else { T::zero() }))
+                }
+                _ => Err(Error::TypeMismatch {
+                    expected: Type::Scalar,
+                    got: Type::Complex,
+                }),
+            }
+        }
+
+        Ast::And(left, right) => {
+            let left_val = eval(left, vars, funcs)?;
+            if let Value::Scalar(l) = left_val {
+                if l == T::zero() {
+                    return Ok(Value::Scalar(T::zero()));
+                }
+                let right_val = eval(right, vars, funcs)?;
+                if let Value::Scalar(r) = right_val {
+                    Ok(Value::Scalar(if r != T::zero() {
+                        T::one()
+                    } else {
+                        T::zero()
+                    }))
+                } else {
+                    Err(Error::TypeMismatch {
+                        expected: Type::Scalar,
+                        got: Type::Complex,
+                    })
+                }
+            } else {
+                Err(Error::TypeMismatch {
+                    expected: Type::Scalar,
+                    got: Type::Complex,
+                })
+            }
+        }
+
+        Ast::Or(left, right) => {
+            let left_val = eval(left, vars, funcs)?;
+            if let Value::Scalar(l) = left_val {
+                if l != T::zero() {
+                    return Ok(Value::Scalar(T::one()));
+                }
+                let right_val = eval(right, vars, funcs)?;
+                if let Value::Scalar(r) = right_val {
+                    Ok(Value::Scalar(if r != T::zero() {
+                        T::one()
+                    } else {
+                        T::zero()
+                    }))
+                } else {
+                    Err(Error::TypeMismatch {
+                        expected: Type::Scalar,
+                        got: Type::Complex,
+                    })
+                }
+            } else {
+                Err(Error::TypeMismatch {
+                    expected: Type::Scalar,
+                    got: Type::Complex,
+                })
+            }
+        }
+
+        Ast::If(cond, then_expr, else_expr) => {
+            let cond_val = eval(cond, vars, funcs)?;
+            if let Value::Scalar(c) = cond_val {
+                if c != T::zero() {
+                    eval(then_expr, vars, funcs)
+                } else {
+                    eval(else_expr, vars, funcs)
+                }
+            } else {
+                Err(Error::TypeMismatch {
+                    expected: Type::Scalar,
+                    got: Type::Complex,
+                })
+            }
         }
 
         Ast::Call(name, args) => {

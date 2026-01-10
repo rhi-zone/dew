@@ -2,6 +2,7 @@
 //!
 //! Compiles expression ASTs to Lua code and optionally executes via mlua.
 
+use rhizome_dew_cond::lua as cond;
 use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
 
@@ -192,10 +193,44 @@ fn emit(ast: &Ast) -> Result<String, LuaError> {
             let inner_str = emit_with_parens(inner, None, false)?;
             match op {
                 UnaryOp::Neg => Ok(format!("-{}", inner_str)),
+                UnaryOp::Not => {
+                    // not(x) returns 1.0 if x == 0.0, else 0.0
+                    let bool_expr = cond::scalar_to_bool(&inner_str);
+                    Ok(cond::bool_to_scalar(&cond::emit_not(&bool_expr)))
+                }
             }
         }
+        Ast::Compare(op, left, right) => {
+            let l = emit(left)?;
+            let r = emit(right)?;
+            let bool_expr = cond::emit_compare(*op, &l, &r);
+            Ok(cond::bool_to_scalar(&bool_expr))
+        }
+        Ast::And(left, right) => {
+            let l = emit(left)?;
+            let r = emit(right)?;
+            let l_bool = cond::scalar_to_bool(&l);
+            let r_bool = cond::scalar_to_bool(&r);
+            let bool_expr = cond::emit_and(&l_bool, &r_bool);
+            Ok(cond::bool_to_scalar(&bool_expr))
+        }
+        Ast::Or(left, right) => {
+            let l = emit(left)?;
+            let r = emit(right)?;
+            let l_bool = cond::scalar_to_bool(&l);
+            let r_bool = cond::scalar_to_bool(&r);
+            let bool_expr = cond::emit_or(&l_bool, &r_bool);
+            Ok(cond::bool_to_scalar(&bool_expr))
+        }
+        Ast::If(cond_ast, then_ast, else_ast) => {
+            let c = emit(cond_ast)?;
+            let then_expr = emit(then_ast)?;
+            let else_expr = emit(else_ast)?;
+            let cond_bool = cond::scalar_to_bool(&c);
+            Ok(cond::emit_if(&cond_bool, &then_expr, &else_expr))
+        }
         Ast::Call(name, args) => {
-            let args_str: Vec<String> = args.iter().map(|a| emit(a)).collect::<Result<_, _>>()?;
+            let args_str: Vec<String> = args.iter().map(emit).collect::<Result<_, _>>()?;
 
             emit_func(name, &args_str).ok_or_else(|| LuaError::UnknownFunction(name.clone()))
         }
@@ -388,5 +423,37 @@ mod tests {
         assert_eq!(compile("x + y"), "x + y");
         assert_eq!(compile("x ^ 2"), "x ^ 2.0");
         assert_eq!(compile("-x"), "-x");
+    }
+
+    #[test]
+    fn test_compare() {
+        assert_eq!(eval("1 < 2", &[]), 1.0);
+        assert_eq!(eval("2 < 1", &[]), 0.0);
+        assert_eq!(eval("x < 5", &[("x", 3.0)]), 1.0);
+        assert_eq!(eval("x >= 5", &[("x", 5.0)]), 1.0);
+        assert_eq!(eval("x == 5", &[("x", 5.0)]), 1.0);
+        assert_eq!(eval("x != 5", &[("x", 5.0)]), 0.0);
+    }
+
+    #[test]
+    fn test_if_then_else() {
+        assert_eq!(eval("if 1 then 10 else 20", &[]), 10.0);
+        assert_eq!(eval("if 0 then 10 else 20", &[]), 20.0);
+        assert_eq!(eval("if x > 5 then 1 else 0", &[("x", 10.0)]), 1.0);
+        assert_eq!(eval("if x > 5 then 1 else 0", &[("x", 3.0)]), 0.0);
+    }
+
+    #[test]
+    fn test_and_or() {
+        assert_eq!(eval("1 and 1", &[]), 1.0);
+        assert_eq!(eval("1 and 0", &[]), 0.0);
+        assert_eq!(eval("0 or 1", &[]), 1.0);
+        assert_eq!(eval("0 or 0", &[]), 0.0);
+    }
+
+    #[test]
+    fn test_not() {
+        assert_eq!(eval("not 0", &[]), 1.0);
+        assert_eq!(eval("not 1", &[]), 0.0);
     }
 }

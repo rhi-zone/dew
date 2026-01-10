@@ -7,13 +7,14 @@ description = "Standard scalar function library for dew expressions"
 
 [features]
 default = []
-wgsl = []
-lua = ["mlua"]
-cranelift = ["cranelift-codegen", "cranelift-frontend", "cranelift-jit", "cranelift-module"]
+wgsl = ["rhizome-dew-cond/wgsl"]
+lua = ["mlua", "rhizome-dew-cond/lua"]
+cranelift = ["cranelift-codegen", "cranelift-frontend", "cranelift-jit", "cranelift-module", "rhizome-dew-cond/cranelift"]
 all = ["wgsl", "lua", "cranelift"]
 
 [dependencies]
-rhizome-dew-core.workspace = true
+rhizome-dew-core = { workspace = true, features = ["func"] }
+rhizome-dew-cond.workspace = true
 num-traits = "0.2"
 
 # Lua backend

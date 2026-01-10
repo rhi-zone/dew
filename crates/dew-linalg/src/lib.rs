@@ -1,38 +1,81 @@
 //! Linear algebra types and operations for dew expressions.
 //!
-//! This crate provides vector and matrix types that work with dew-core's AST.
-//! Types propagate during evaluation/emission - no separate type inference pass.
+//! This crate provides vector and matrix types (Vec2, Vec3, Mat2, Mat3, etc.)
+//! that work with dew-core's AST. Types propagate during evaluation/emission.
+//!
+//! # Quick Start
+//!
+//! ```
+//! use rhizome_dew_core::Expr;
+//! use rhizome_dew_linalg::{Value, eval, linalg_registry};
+//! use std::collections::HashMap;
+//!
+//! let expr = Expr::parse("dot(a, b)").unwrap();
+//!
+//! let vars: HashMap<String, Value<f32>> = [
+//!     ("a".into(), Value::Vec2([1.0, 0.0])),
+//!     ("b".into(), Value::Vec2([0.0, 1.0])),
+//! ].into();
+//!
+//! let result = eval(expr.ast(), &vars, &linalg_registry()).unwrap();
+//! assert_eq!(result, Value::Scalar(0.0)); // perpendicular vectors
+//! ```
 //!
 //! # Features
 //!
-//! - `3d` (default): Enables Vec3, Mat3
-//! - `4d`: Enables Vec4, Mat4 (implies 3d)
+//! | Feature | Description                    |
+//! |---------|--------------------------------|
+//! | `3d`    | Vec3, Mat3 (default)           |
+//! | `4d`    | Vec4, Mat4 (implies 3d)        |
+//! | `wgsl`  | WGSL shader code generation    |
+//! | `lua`   | Lua code generation            |
+//! | `cranelift` | Cranelift JIT compilation  |
+//!
+//! # Types
+//!
+//! | Type     | Description                    |
+//! |----------|--------------------------------|
+//! | `Scalar` | Single f32/f64 value           |
+//! | `Vec2`   | 2D vector [x, y]               |
+//! | `Vec3`   | 3D vector [x, y, z] (3d)       |
+//! | `Vec4`   | 4D vector [x, y, z, w] (4d)    |
+//! | `Mat2`   | 2x2 matrix, column-major       |
+//! | `Mat3`   | 3x3 matrix, column-major (3d)  |
+//! | `Mat4`   | 4x4 matrix, column-major (4d)  |
+//!
+//! # Functions
+//!
+//! | Function           | Description                              |
+//! |--------------------|------------------------------------------|
+//! | `dot(a, b)`        | Dot product → scalar                     |
+//! | `cross(a, b)`      | Cross product → vec3 (3d only)           |
+//! | `length(v)`        | Vector magnitude → scalar                |
+//! | `normalize(v)`     | Unit vector → same type                  |
+//! | `distance(a, b)`   | Distance between points → scalar         |
+//! | `reflect(v, n)`    | Reflect v around normal n → same type    |
+//! | `hadamard(a, b)`   | Element-wise multiply → same type        |
+//! | `lerp(a, b, t)`    | Linear interpolation                     |
+//! | `mix(a, b, t)`     | Alias for lerp                           |
+//!
+//! # Operators
+//!
+//! | Operation          | Types                           |
+//! |--------------------|---------------------------------|
+//! | `vec + vec`        | Component-wise addition         |
+//! | `vec - vec`        | Component-wise subtraction      |
+//! | `vec * scalar`     | Scalar multiplication           |
+//! | `scalar * vec`     | Scalar multiplication           |
+//! | `mat * vec`        | Matrix-vector multiplication    |
+//! | `mat * mat`        | Matrix multiplication           |
+//! | `-vec`             | Negation                        |
 //!
 //! # Composability
 //!
 //! For composing multiple domain crates (e.g., linalg + rotors), the [`LinalgValue`]
 //! trait allows defining a combined value type that works with both crates.
-//!
-//! # Example
-//!
-//! ```
-//! use rhizome_dew_core::Expr;
-//! use rhizome_dew_linalg::{Value, Type, eval, FunctionRegistry};
-//! use std::collections::HashMap;
-//!
-//! let expr = Expr::parse("a + b").unwrap();
-//!
-//! let mut vars: HashMap<String, Value<f32>> = HashMap::new();
-//! vars.insert("a".to_string(), Value::Vec2([1.0, 2.0]));
-//! vars.insert("b".to_string(), Value::Vec2([3.0, 4.0]));
-//!
-//! let registry = FunctionRegistry::new();
-//! let result = eval(expr.ast(), &vars, &registry).unwrap();
-//! assert_eq!(result, Value::Vec2([4.0, 6.0]));
-//! ```
 
 use num_traits::Float;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
+use rhizome_dew_core::{Ast, BinOp, CompareOp, UnaryOp};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -308,6 +351,8 @@ pub enum Error {
         expected: Vec<Type>,
         got: Vec<Type>,
     },
+    /// Conditionals require scalar types.
+    UnsupportedTypeForConditional(Type),
 }
 
 impl std::fmt::Display for Error {
@@ -337,6 +382,9 @@ impl std::fmt::Display for Error {
                     f,
                     "function '{func}' expects types {expected:?}, got {got:?}"
                 )
+            }
+            Error::UnsupportedTypeForConditional(t) => {
+                write!(f, "conditionals require scalar type, got {t}")
             }
         }
     }
@@ -457,6 +505,64 @@ pub fn eval<T: Float>(
             }
 
             Ok(func.call(&arg_vals))
+        }
+
+        Ast::Compare(op, left, right) => {
+            let left_val = eval(left, vars, funcs)?;
+            let right_val = eval(right, vars, funcs)?;
+            // Comparisons only supported for scalars
+            match (&left_val, &right_val) {
+                (Value::Scalar(l), Value::Scalar(r)) => {
+                    let result = match op {
+                        CompareOp::Lt => *l < *r,
+                        CompareOp::Le => *l <= *r,
+                        CompareOp::Gt => *l > *r,
+                        CompareOp::Ge => *l >= *r,
+                        CompareOp::Eq => *l == *r,
+                        CompareOp::Ne => *l != *r,
+                    };
+                    Ok(Value::Scalar(if result { T::one() } else { T::zero() }))
+                }
+                _ => Err(Error::UnsupportedTypeForConditional(left_val.typ())),
+            }
+        }
+
+        Ast::And(left, right) => {
+            let left_val = eval(left, vars, funcs)?;
+            let right_val = eval(right, vars, funcs)?;
+            match (&left_val, &right_val) {
+                (Value::Scalar(l), Value::Scalar(r)) => {
+                    let result = !l.is_zero() && !r.is_zero();
+                    Ok(Value::Scalar(if result { T::one() } else { T::zero() }))
+                }
+                _ => Err(Error::UnsupportedTypeForConditional(left_val.typ())),
+            }
+        }
+
+        Ast::Or(left, right) => {
+            let left_val = eval(left, vars, funcs)?;
+            let right_val = eval(right, vars, funcs)?;
+            match (&left_val, &right_val) {
+                (Value::Scalar(l), Value::Scalar(r)) => {
+                    let result = !l.is_zero() || !r.is_zero();
+                    Ok(Value::Scalar(if result { T::one() } else { T::zero() }))
+                }
+                _ => Err(Error::UnsupportedTypeForConditional(left_val.typ())),
+            }
+        }
+
+        Ast::If(cond, then_ast, else_ast) => {
+            let cond_val = eval(cond, vars, funcs)?;
+            match cond_val {
+                Value::Scalar(c) => {
+                    if !c.is_zero() {
+                        eval(then_ast, vars, funcs)
+                    } else {
+                        eval(else_ast, vars, funcs)
+                    }
+                }
+                _ => Err(Error::UnsupportedTypeForConditional(cond_val.typ())),
+            }
         }
     }
 }

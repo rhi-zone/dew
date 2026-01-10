@@ -3,6 +3,7 @@
 //! Complex numbers are represented as vec2<f32> where x=real, y=imag.
 
 use crate::Type;
+use rhizome_dew_cond::wgsl as cond;
 use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
 
@@ -16,6 +17,8 @@ pub enum WgslError {
         left: Type,
         right: Type,
     },
+    /// Conditionals require scalar types.
+    UnsupportedTypeForConditional(Type),
 }
 
 impl std::fmt::Display for WgslError {
@@ -25,6 +28,9 @@ impl std::fmt::Display for WgslError {
             WgslError::UnknownFunction(name) => write!(f, "unknown function: '{name}'"),
             WgslError::TypeMismatch { op, left, right } => {
                 write!(f, "type mismatch for {op}: {left} vs {right}")
+            }
+            WgslError::UnsupportedTypeForConditional(t) => {
+                write!(f, "conditionals require scalar type, got {t}")
             }
         }
     }
@@ -74,6 +80,72 @@ pub fn emit_wgsl(ast: &Ast, var_types: &HashMap<String, Type>) -> Result<WgslExp
         Ast::UnaryOp(op, inner) => {
             let inner_expr = emit_wgsl(inner, var_types)?;
             emit_unaryop(*op, inner_expr)
+        }
+
+        Ast::Compare(op, left, right) => {
+            let left_expr = emit_wgsl(left, var_types)?;
+            let right_expr = emit_wgsl(right, var_types)?;
+            // Comparisons only supported for scalars
+            if left_expr.typ != Type::Scalar || right_expr.typ != Type::Scalar {
+                return Err(WgslError::UnsupportedTypeForConditional(Type::Complex));
+            }
+            let bool_expr = cond::emit_compare(*op, &left_expr.code, &right_expr.code);
+            Ok(WgslExpr {
+                code: cond::bool_to_scalar(&bool_expr),
+                typ: Type::Scalar,
+            })
+        }
+
+        Ast::And(left, right) => {
+            let left_expr = emit_wgsl(left, var_types)?;
+            let right_expr = emit_wgsl(right, var_types)?;
+            if left_expr.typ != Type::Scalar || right_expr.typ != Type::Scalar {
+                return Err(WgslError::UnsupportedTypeForConditional(Type::Complex));
+            }
+            let l_bool = cond::scalar_to_bool(&left_expr.code);
+            let r_bool = cond::scalar_to_bool(&right_expr.code);
+            let bool_expr = cond::emit_and(&l_bool, &r_bool);
+            Ok(WgslExpr {
+                code: cond::bool_to_scalar(&bool_expr),
+                typ: Type::Scalar,
+            })
+        }
+
+        Ast::Or(left, right) => {
+            let left_expr = emit_wgsl(left, var_types)?;
+            let right_expr = emit_wgsl(right, var_types)?;
+            if left_expr.typ != Type::Scalar || right_expr.typ != Type::Scalar {
+                return Err(WgslError::UnsupportedTypeForConditional(Type::Complex));
+            }
+            let l_bool = cond::scalar_to_bool(&left_expr.code);
+            let r_bool = cond::scalar_to_bool(&right_expr.code);
+            let bool_expr = cond::emit_or(&l_bool, &r_bool);
+            Ok(WgslExpr {
+                code: cond::bool_to_scalar(&bool_expr),
+                typ: Type::Scalar,
+            })
+        }
+
+        Ast::If(cond_ast, then_ast, else_ast) => {
+            let cond_expr = emit_wgsl(cond_ast, var_types)?;
+            let then_expr = emit_wgsl(then_ast, var_types)?;
+            let else_expr = emit_wgsl(else_ast, var_types)?;
+            if cond_expr.typ != Type::Scalar {
+                return Err(WgslError::UnsupportedTypeForConditional(cond_expr.typ));
+            }
+            // then and else can be any matching types
+            if then_expr.typ != else_expr.typ {
+                return Err(WgslError::TypeMismatch {
+                    op: "if/else",
+                    left: then_expr.typ,
+                    right: else_expr.typ,
+                });
+            }
+            let cond_bool = cond::scalar_to_bool(&cond_expr.code);
+            Ok(WgslExpr {
+                code: cond::emit_if(&cond_bool, &then_expr.code, &else_expr.code),
+                typ: then_expr.typ,
+            })
         }
 
         Ast::Call(name, args) => {
@@ -209,6 +281,16 @@ fn emit_unaryop(op: UnaryOp, inner: WgslExpr) -> Result<WgslExpr, WgslError> {
             code: format!("(-{})", inner.code),
             typ: inner.typ,
         }),
+        UnaryOp::Not => {
+            if inner.typ != Type::Scalar {
+                return Err(WgslError::UnsupportedTypeForConditional(inner.typ));
+            }
+            let bool_expr = cond::scalar_to_bool(&inner.code);
+            Ok(WgslExpr {
+                code: cond::bool_to_scalar(&cond::emit_not(&bool_expr)),
+                typ: Type::Scalar,
+            })
+        }
     }
 }
 

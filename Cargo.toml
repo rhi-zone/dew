@@ -10,7 +10,51 @@ repository = "https://github.com/rhizome-lab/dew"
 
 [workspace.dependencies]
 rhizome-dew-core = { path = "crates/dew-core" }
+rhizome-dew-cond = { path = "crates/dew-cond" }
 rhizome-dew-scalar = { path = "crates/dew-scalar" }
 rhizome-dew-linalg = { path = "crates/dew-linalg" }
 rhizome-dew-complex = { path = "crates/dew-complex" }
 rhizome-dew-quaternion = { path = "crates/dew-quaternion" }
+
+# Root package for examples
+[package]
+name = "dew-examples"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[features]
+default = []
+wgsl = ["rhizome-dew-scalar/wgsl"]
+
+[dependencies]
+rhizome-dew-core = { workspace = true, features = ["cond", "func"] }
+rhizome-dew-scalar = { workspace = true }
+rhizome-dew-linalg = { workspace = true }
+rhizome-dew-complex = { workspace = true }
+rhizome-dew-quaternion = { workspace = true }
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
+
+[[example]]
+name = "conditionals"
+path = "examples/conditionals.rs"
+
+[[example]]
+name = "wgsl_codegen"
+path = "examples/wgsl_codegen.rs"
+required-features = ["wgsl"]
+
+[[example]]
+name = "linalg"
+path = "examples/linalg.rs"
+
+[[example]]
+name = "complex"
+path = "examples/complex.rs"
+
+[[example]]
+name = "quaternion"
+path = "examples/quaternion.rs"
