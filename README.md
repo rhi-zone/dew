@@ -1,12 +1,12 @@
 # Dew
 
-Minimal expression language for procedural generation.
+Minimal expression language, multiple backends.
 
 Part of the [Rhizome](https://rhizome-lab.github.io) ecosystem.
 
 ## Overview
 
-Dew is a domain-specific expression language designed for procedural content generation. Small, ephemeral, perfectly formed—like a droplet condensed from logic. It provides a composable way to define generation rules that can be compiled to multiple backends.
+Dew is a minimal expression language that compiles to multiple backends. Small, ephemeral, perfectly formed—like a droplet condensed from logic. Parse once, emit to WGSL (GPU shaders), Cranelift (native JIT), or Lua (scripting).
 
 ## Crates
 

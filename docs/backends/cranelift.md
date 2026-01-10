@@ -83,7 +83,7 @@ Transcendental functions (sin, cos, exp, etc.) are implemented via callbacks to 
 
 ## Use Cases
 
-- Procedural generation in games
-- Real-time audio/video processing
+- Real-time graphics and audio
 - Scientific computing
+- Game engines
 - Any hot path with dynamic expressions
