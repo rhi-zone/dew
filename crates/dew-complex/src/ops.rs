@@ -23,6 +23,7 @@ pub fn apply_binop<T: Float>(
 pub fn apply_unaryop<T: Float>(op: UnaryOp, val: Value<T>) -> Result<Value<T>, Error> {
     match op {
         UnaryOp::Neg => apply_neg(val),
+        UnaryOp::Not => apply_not(val),
     }
 }
 
@@ -153,6 +154,25 @@ fn apply_neg<T: Float>(val: Value<T>) -> Result<Value<T>, Error> {
     match val {
         Value::Scalar(v) => Ok(Value::Scalar(-v)),
         Value::Complex(c) => Ok(Value::Complex([-c[0], -c[1]])),
+    }
+}
+
+// ============================================================================
+// Logical Not
+// ============================================================================
+
+fn apply_not<T: Float>(val: Value<T>) -> Result<Value<T>, Error> {
+    match val {
+        Value::Scalar(v) => Ok(Value::Scalar(if v == T::zero() {
+            T::one()
+        } else {
+            T::zero()
+        })),
+        // not doesn't make sense for complex
+        Value::Complex(_) => Err(crate::Error::TypeMismatch {
+            expected: crate::Type::Scalar,
+            got: crate::Type::Complex,
+        }),
     }
 }
 

@@ -1,23 +1,132 @@
 //! Standard scalar function library for dew expressions.
 //!
-//! Provides common math functions (sin, cos, sqrt, etc.) and constants (pi, e)
-//! with a generic numeric type `T: Float`.
+//! This crate provides the foundation for numeric expressions: standard math functions
+//! (sin, cos, sqrt, etc.), constants (pi, e, tau), and evaluation for scalar values.
+//! All functions are generic over `T: Float`, supporting both `f32` and `f64`.
 //!
-//! # Usage
+//! # Quick Start
 //!
 //! ```
 //! use rhizome_dew_core::Expr;
 //! use rhizome_dew_scalar::{eval, scalar_registry};
 //! use std::collections::HashMap;
 //!
-//! let expr = Expr::parse("sin(x) + pi()").unwrap();
-//! let vars: HashMap<String, f32> = [("x".to_string(), 0.0)].into();
-//! let registry = scalar_registry();
-//! let value = eval(expr.ast(), &vars, &registry).unwrap();
+//! // Parse and evaluate an expression
+//! let expr = Expr::parse("sin(x * pi()) + 1").unwrap();
+//! let vars: HashMap<String, f32> = [("x".into(), 0.5)].into();
+//! let result = eval(expr.ast(), &vars, &scalar_registry()).unwrap();
+//! assert!((result - 2.0).abs() < 0.001); // sin(0.5 * π) + 1 = 2
+//! ```
+//!
+//! # Features
+//!
+//! | Feature     | Description                                |
+//! |-------------|--------------------------------------------|
+//! | `wgsl`      | WGSL shader code generation                |
+//! | `lua`       | Lua code generation with mlua execution    |
+//! | `cranelift` | Cranelift JIT compilation                  |
+//!
+//! # Available Functions
+//!
+//! ## Constants
+//!
+//! | Function | Description              |
+//! |----------|--------------------------|
+//! | `pi()`   | π ≈ 3.14159              |
+//! | `e()`    | Euler's number ≈ 2.71828 |
+//! | `tau()`  | τ = 2π ≈ 6.28318         |
+//!
+//! ## Trigonometric
+//!
+//! | Function       | Description                    |
+//! |----------------|--------------------------------|
+//! | `sin(x)`       | Sine                           |
+//! | `cos(x)`       | Cosine                         |
+//! | `tan(x)`       | Tangent                        |
+//! | `asin(x)`      | Arcsine                        |
+//! | `acos(x)`      | Arccosine                      |
+//! | `atan(x)`      | Arctangent                     |
+//! | `atan2(y, x)`  | Two-argument arctangent        |
+//! | `sinh(x)`      | Hyperbolic sine                |
+//! | `cosh(x)`      | Hyperbolic cosine              |
+//! | `tanh(x)`      | Hyperbolic tangent             |
+//!
+//! ## Exponential & Logarithmic
+//!
+//! | Function        | Description                  |
+//! |-----------------|------------------------------|
+//! | `exp(x)`        | e^x                          |
+//! | `exp2(x)`       | 2^x                          |
+//! | `log(x)`        | Natural logarithm (alias ln) |
+//! | `ln(x)`         | Natural logarithm            |
+//! | `log2(x)`       | Base-2 logarithm             |
+//! | `log10(x)`      | Base-10 logarithm            |
+//! | `pow(x, y)`     | x^y                          |
+//! | `sqrt(x)`       | Square root                  |
+//! | `inversesqrt(x)`| 1 / sqrt(x)                  |
+//!
+//! ## Common Math
+//!
+//! | Function         | Description                    |
+//! |------------------|--------------------------------|
+//! | `abs(x)`         | Absolute value                 |
+//! | `sign(x)`        | Sign (-1, 0, or 1)             |
+//! | `floor(x)`       | Round down                     |
+//! | `ceil(x)`        | Round up                       |
+//! | `round(x)`       | Round to nearest               |
+//! | `trunc(x)`       | Truncate toward zero           |
+//! | `fract(x)`       | Fractional part                |
+//! | `min(a, b)`      | Minimum of two values          |
+//! | `max(a, b)`      | Maximum of two values          |
+//! | `clamp(x, lo, hi)`| Clamp to range                |
+//! | `saturate(x)`    | Clamp to [0, 1]                |
+//!
+//! ## Interpolation
+//!
+//! | Function                      | Description                           |
+//! |-------------------------------|---------------------------------------|
+//! | `lerp(a, b, t)`               | Linear interpolation: a + (b-a)*t     |
+//! | `mix(a, b, t)`                | Alias for lerp (GLSL naming)          |
+//! | `step(edge, x)`               | 0 if x < edge, else 1                 |
+//! | `smoothstep(e0, e1, x)`       | Smooth Hermite interpolation          |
+//! | `inverse_lerp(a, b, v)`       | Inverse of lerp: (v-a) / (b-a)        |
+//! | `remap(x, i0, i1, o0, o1)`    | Remap from [i0,i1] to [o0,o1]         |
+//!
+//! # Custom Functions
+//!
+//! You can register custom functions by implementing the [`ScalarFn`] trait:
+//!
+//! ```
+//! use rhizome_dew_scalar::{ScalarFn, FunctionRegistry, scalar_registry};
+//!
+//! struct Double;
+//! impl ScalarFn<f32> for Double {
+//!     fn name(&self) -> &str { "double" }
+//!     fn arg_count(&self) -> usize { 1 }
+//!     fn call(&self, args: &[f32]) -> f32 { args[0] * 2.0 }
+//! }
+//!
+//! let mut registry = scalar_registry();
+//! registry.register(Double);
+//! ```
+//!
+//! # Using f64
+//!
+//! All functions work with `f64` by specifying the type parameter:
+//!
+//! ```
+//! use rhizome_dew_core::Expr;
+//! use rhizome_dew_scalar::{eval, scalar_registry, FunctionRegistry};
+//! use std::collections::HashMap;
+//!
+//! let registry: FunctionRegistry<f64> = scalar_registry();
+//! let expr = Expr::parse("sqrt(2)").unwrap();
+//! let result: f64 = eval(expr.ast(), &HashMap::new(), &registry).unwrap();
+//! assert!((result - std::f64::consts::SQRT_2).abs() < 1e-10);
 //! ```
 
 use num_traits::Float;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
+use rhizome_dew_core::{Ast, BinOp, CompareOp, UnaryOp};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -150,7 +259,57 @@ pub fn eval<T: Float>(
             let v = eval(inner, vars, funcs)?;
             Ok(match op {
                 UnaryOp::Neg => -v,
+                UnaryOp::Not => {
+                    if v == T::zero() {
+                        T::one()
+                    } else {
+                        T::zero()
+                    }
+                }
             })
+        }
+
+        Ast::Compare(op, left, right) => {
+            let l = eval(left, vars, funcs)?;
+            let r = eval(right, vars, funcs)?;
+            let result = match op {
+                CompareOp::Lt => l < r,
+                CompareOp::Le => l <= r,
+                CompareOp::Gt => l > r,
+                CompareOp::Ge => l >= r,
+                CompareOp::Eq => l == r,
+                CompareOp::Ne => l != r,
+            };
+            Ok(if result { T::one() } else { T::zero() })
+        }
+
+        Ast::And(left, right) => {
+            let l = eval(left, vars, funcs)?;
+            if l == T::zero() {
+                Ok(T::zero()) // Short-circuit
+            } else {
+                let r = eval(right, vars, funcs)?;
+                Ok(if r != T::zero() { T::one() } else { T::zero() })
+            }
+        }
+
+        Ast::Or(left, right) => {
+            let l = eval(left, vars, funcs)?;
+            if l != T::zero() {
+                Ok(T::one()) // Short-circuit
+            } else {
+                let r = eval(right, vars, funcs)?;
+                Ok(if r != T::zero() { T::one() } else { T::zero() })
+            }
+        }
+
+        Ast::If(cond, then_expr, else_expr) => {
+            let c = eval(cond, vars, funcs)?;
+            if c != T::zero() {
+                eval(then_expr, vars, funcs)
+            } else {
+                eval(else_expr, vars, funcs)
+            }
         }
 
         Ast::Call(name, args) => {

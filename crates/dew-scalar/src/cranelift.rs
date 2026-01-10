@@ -7,6 +7,7 @@ use cranelift_codegen::ir::{InstBuilder, Value as CraneliftValue};
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{FuncId, Linkage, Module};
+use rhizome_dew_cond::cranelift as cond;
 use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
 
@@ -400,7 +401,46 @@ fn compile_ast(
             let v = compile_ast(inner, builder, vars, math)?;
             Ok(match op {
                 UnaryOp::Neg => builder.ins().fneg(v),
+                UnaryOp::Not => {
+                    // not(x) returns 1.0 if x == 0.0, else 0.0
+                    let bool_val = cond::scalar_to_bool(builder, v);
+                    let inverted = cond::emit_not(builder, bool_val);
+                    cond::bool_to_scalar(builder, inverted)
+                }
             })
+        }
+
+        Ast::Compare(op, left, right) => {
+            let l = compile_ast(left, builder, vars, math)?;
+            let r = compile_ast(right, builder, vars, math)?;
+            let bool_val = cond::emit_compare(builder, *op, l, r);
+            Ok(cond::bool_to_scalar(builder, bool_val))
+        }
+
+        Ast::And(left, right) => {
+            let l = compile_ast(left, builder, vars, math)?;
+            let r = compile_ast(right, builder, vars, math)?;
+            let l_bool = cond::scalar_to_bool(builder, l);
+            let r_bool = cond::scalar_to_bool(builder, r);
+            let result_bool = cond::emit_and(builder, l_bool, r_bool);
+            Ok(cond::bool_to_scalar(builder, result_bool))
+        }
+
+        Ast::Or(left, right) => {
+            let l = compile_ast(left, builder, vars, math)?;
+            let r = compile_ast(right, builder, vars, math)?;
+            let l_bool = cond::scalar_to_bool(builder, l);
+            let r_bool = cond::scalar_to_bool(builder, r);
+            let result_bool = cond::emit_or(builder, l_bool, r_bool);
+            Ok(cond::bool_to_scalar(builder, result_bool))
+        }
+
+        Ast::If(cond_ast, then_ast, else_ast) => {
+            let c = compile_ast(cond_ast, builder, vars, math)?;
+            let then_val = compile_ast(then_ast, builder, vars, math)?;
+            let else_val = compile_ast(else_ast, builder, vars, math)?;
+            let cond_bool = cond::scalar_to_bool(builder, c);
+            Ok(cond::emit_if(builder, cond_bool, then_val, else_val))
         }
 
         Ast::Call(name, args) => {
@@ -623,5 +663,37 @@ mod tests {
             &[5.0, 0.0, 10.0, 0.0, 100.0],
         );
         assert_eq!(result, 50.0);
+    }
+
+    #[test]
+    fn test_compare() {
+        assert_eq!(eval("1 < 2", &[], &[]), 1.0);
+        assert_eq!(eval("2 < 1", &[], &[]), 0.0);
+        assert_eq!(eval("x < 5", &["x"], &[3.0]), 1.0);
+        assert_eq!(eval("x >= 5", &["x"], &[5.0]), 1.0);
+        assert_eq!(eval("x == 5", &["x"], &[5.0]), 1.0);
+        assert_eq!(eval("x != 5", &["x"], &[5.0]), 0.0);
+    }
+
+    #[test]
+    fn test_if_then_else() {
+        assert_eq!(eval("if 1 then 10 else 20", &[], &[]), 10.0);
+        assert_eq!(eval("if 0 then 10 else 20", &[], &[]), 20.0);
+        assert_eq!(eval("if x > 5 then 1 else 0", &["x"], &[10.0]), 1.0);
+        assert_eq!(eval("if x > 5 then 1 else 0", &["x"], &[3.0]), 0.0);
+    }
+
+    #[test]
+    fn test_and_or() {
+        assert_eq!(eval("1 and 1", &[], &[]), 1.0);
+        assert_eq!(eval("1 and 0", &[], &[]), 0.0);
+        assert_eq!(eval("0 or 1", &[], &[]), 1.0);
+        assert_eq!(eval("0 or 0", &[], &[]), 0.0);
+    }
+
+    #[test]
+    fn test_not() {
+        assert_eq!(eval("not 0", &[], &[]), 1.0);
+        assert_eq!(eval("not 1", &[], &[]), 0.0);
     }
 }

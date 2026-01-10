@@ -31,6 +31,8 @@ pub enum CraneliftError {
     },
     UnsupportedReturnType(Type),
     JitError(String),
+    /// Conditionals require scalar types.
+    UnsupportedConditional(&'static str),
 }
 
 impl std::fmt::Display for CraneliftError {
@@ -45,6 +47,12 @@ impl std::fmt::Display for CraneliftError {
                 write!(f, "unsupported return type: {t}")
             }
             CraneliftError::JitError(msg) => write!(f, "JIT error: {msg}"),
+            CraneliftError::UnsupportedConditional(what) => {
+                write!(
+                    f,
+                    "conditionals not supported in complex cranelift backend: {what}"
+                )
+            }
         }
     }
 }
@@ -235,10 +243,6 @@ impl CompiledComplexFn {
 struct MathFuncs {
     sqrt: FuncRef,
     pow: FuncRef,
-    sin: FuncRef,
-    cos: FuncRef,
-    exp: FuncRef,
-    log: FuncRef,
     atan2: FuncRef,
 }
 
@@ -294,18 +298,6 @@ impl ComplexJit {
         let pow_id = module
             .declare_function("complex_pow", Linkage::Import, &sig_f32_f32_f32)
             .map_err(|e| CraneliftError::JitError(e.to_string()))?;
-        let sin_id = module
-            .declare_function("complex_sin", Linkage::Import, &sig_f32_f32)
-            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
-        let cos_id = module
-            .declare_function("complex_cos", Linkage::Import, &sig_f32_f32)
-            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
-        let exp_id = module
-            .declare_function("complex_exp", Linkage::Import, &sig_f32_f32)
-            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
-        let log_id = module
-            .declare_function("complex_log", Linkage::Import, &sig_f32_f32)
-            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
         let atan2_id = module
             .declare_function("complex_atan2", Linkage::Import, &sig_f32_f32_f32)
             .map_err(|e| CraneliftError::JitError(e.to_string()))?;
@@ -336,10 +328,6 @@ impl ComplexJit {
             let math_funcs = MathFuncs {
                 sqrt: module.declare_func_in_func(sqrt_id, builder.func),
                 pow: module.declare_func_in_func(pow_id, builder.func),
-                sin: module.declare_func_in_func(sin_id, builder.func),
-                cos: module.declare_func_in_func(cos_id, builder.func),
-                exp: module.declare_func_in_func(exp_id, builder.func),
-                log: module.declare_func_in_func(log_id, builder.func),
                 atan2: module.declare_func_in_func(atan2_id, builder.func),
             };
 
@@ -426,6 +414,14 @@ fn compile_ast(
                 .collect::<Result<_, _>>()?;
             compile_call(name, arg_vals, builder, math)
         }
+
+        Ast::Compare(_, _, _) => Err(CraneliftError::UnsupportedConditional("Compare")),
+
+        Ast::And(_, _) => Err(CraneliftError::UnsupportedConditional("And")),
+
+        Ast::Or(_, _) => Err(CraneliftError::UnsupportedConditional("Or")),
+
+        Ast::If(_, _, _) => Err(CraneliftError::UnsupportedConditional("If")),
     }
 }
 
@@ -541,6 +537,7 @@ fn compile_unaryop(
                 builder.ins().fneg(c[1]),
             ])),
         },
+        UnaryOp::Not => Err(CraneliftError::UnsupportedConditional("Not")),
     }
 }
 

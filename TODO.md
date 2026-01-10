@@ -24,6 +24,19 @@ Each domain crate handles its own types during eval/emit.
 Note: Old standalone backend crates removed.
 Each domain crate now has self-contained backends behind feature flags.
 
+### Conditionals (dew-cond)
+
+- [x] Conditional AST nodes in dew-core (Compare, And, Or, If, UnaryOp::Not)
+- [x] Feature-gated: `cond` feature in dew-core enables conditional syntax
+- [x] Feature-gated: `func` feature in dew-core enables function calls
+- [x] dew-cond crate with backend helpers (WGSL, Lua, Cranelift)
+- [x] Scalar comparison/conditional support in dew-scalar
+- [x] Scalar-only comparison passthrough in domain crates (complex, linalg, quaternion)
+
+Note: Comparison semantics only for scalars. Complex/quaternion/vector types
+don't have obvious comparison semantics, so they only support scalar comparisons
+via passthrough.
+
 ### Standard Library (dew-scalar)
 
 - [x] Generic over `T: Float` (works with f32, f64)
@@ -40,6 +53,9 @@ Each domain crate now has self-contained backends behind feature flags.
 - [x] Add integration tests (parity tests across backends)
 - [x] Exhaustive test matrix for all functions and operations across all backends
 - [x] Documentation examples
+- [x] Property-based testing (proptest) for parser robustness
+- [x] Runnable examples in `examples/` directory
+- [x] VitePress documentation in `docs/`
 
 ## Future Work
 

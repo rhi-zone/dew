@@ -32,6 +32,8 @@ pub enum CraneliftError {
     },
     UnsupportedReturnType(Type),
     JitError(String),
+    /// Conditionals not supported in cranelift backend.
+    UnsupportedConditional(&'static str),
 }
 
 impl std::fmt::Display for CraneliftError {
@@ -46,6 +48,12 @@ impl std::fmt::Display for CraneliftError {
                 write!(f, "unsupported return type: {t}")
             }
             CraneliftError::JitError(msg) => write!(f, "JIT error: {msg}"),
+            CraneliftError::UnsupportedConditional(what) => {
+                write!(
+                    f,
+                    "conditionals not supported in quaternion cranelift backend: {what}"
+                )
+            }
         }
     }
 }
@@ -432,6 +440,14 @@ fn compile_ast(
                 .collect::<Result<_, _>>()?;
             compile_call(name, arg_vals, builder, math)
         }
+
+        Ast::Compare(_, _, _) => Err(CraneliftError::UnsupportedConditional("Compare")),
+
+        Ast::And(_, _) => Err(CraneliftError::UnsupportedConditional("And")),
+
+        Ast::Or(_, _) => Err(CraneliftError::UnsupportedConditional("Or")),
+
+        Ast::If(_, _, _) => Err(CraneliftError::UnsupportedConditional("If")),
     }
 }
 
@@ -609,6 +625,7 @@ fn compile_unaryop(
                 builder.ins().fneg(q[3]),
             ])),
         },
+        UnaryOp::Not => Err(CraneliftError::UnsupportedConditional("Not")),
     }
 }
 

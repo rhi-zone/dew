@@ -25,6 +25,20 @@ pub fn apply_binop<T: Float>(
 pub fn apply_unaryop<T: Float>(op: UnaryOp, val: Value<T>) -> Result<Value<T>, Error> {
     match op {
         UnaryOp::Neg => apply_neg(val),
+        UnaryOp::Not => apply_not(val),
+    }
+}
+
+fn apply_not<T: Float>(val: Value<T>) -> Result<Value<T>, Error> {
+    match val {
+        Value::Scalar(v) => {
+            let result = if v.is_zero() { T::one() } else { T::zero() };
+            Ok(Value::Scalar(result))
+        }
+        _ => Err(Error::UnaryTypeMismatch {
+            op: UnaryOp::Not,
+            operand: val.typ(),
+        }),
     }
 }
 
