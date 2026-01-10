@@ -1,6 +1,6 @@
 # Introduction
 
-Dew is an expression language for procedural generation. It provides composable math expressions that compile to multiple backends.
+Dew is a minimal expression language that compiles to multiple backends. Parse once, emit to WGSL (GPU shaders), Cranelift (native JIT), or Lua (scripting).
 
 Part of the [Rhizome](https://rhizome-lab.github.io) ecosystem.
 

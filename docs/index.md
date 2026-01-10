@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: Dew
-  text: Expression Language for Procedural Generation
-  tagline: Composable math expressions, multiple backends
+  text: Minimal Expression Language
+  tagline: Parse once, compile to WGSL, Cranelift, or Lua
   actions:
     - theme: brand
       text: Get Started

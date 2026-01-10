@@ -1,11 +1,11 @@
 //! # dew-core
 //!
-//! Minimal expression language for procedural generation and creative coding.
+//! Minimal expression language, multiple backends.
 //!
 //! This crate provides a simple expression parser that compiles string expressions
 //! into evaluable ASTs. Variables and functions are provided by the caller—nothing
 //! is hardcoded—making it suitable for user-facing expression inputs, shader
-//! parameter systems, and procedural generation pipelines.
+//! parameter systems, and dynamic computation pipelines.
 //!
 //! ## Design Philosophy
 //!
