@@ -6,9 +6,10 @@ license.workspace = true
 description = "Core expression language for dew"
 
 [features]
-default = []
+default = ["introspect"]
 cond = []
 func = []
+introspect = []  # AST introspection: free_vars, etc.
 
 [dependencies]
 

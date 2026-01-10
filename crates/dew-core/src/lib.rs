@@ -16,10 +16,11 @@
 //!
 //! ## Features
 //!
-//! | Feature | Description |
-//! |---------|-------------|
-//! | `cond`  | Conditionals (`if`/`then`/`else`), comparisons (`<`, `<=`, etc.), boolean logic (`and`, `or`, `not`) |
-//! | `func`  | Function calls via [`ExprFn`] trait and [`FunctionRegistry`] |
+//! | Feature      | Description |
+//! |--------------|-------------|
+//! | `introspect` | AST introspection (`free_vars`, etc.) - **enabled by default** |
+//! | `cond`       | Conditionals (`if`/`then`/`else`), comparisons (`<`, `<=`, etc.), boolean logic (`and`, `or`, `not`) |
+//! | `func`       | Function calls via [`ExprFn`] trait and [`FunctionRegistry`] |
 //!
 //! ## Syntax Reference
 //!
@@ -134,6 +135,8 @@
 //! ```
 
 use std::collections::HashMap;
+#[cfg(feature = "introspect")]
+use std::collections::HashSet;
 #[cfg(feature = "func")]
 use std::sync::Arc;
 
@@ -571,6 +574,77 @@ pub enum UnaryOp {
 }
 
 // ============================================================================
+// AST Introspection (introspect feature)
+// ============================================================================
+
+#[cfg(feature = "introspect")]
+impl Ast {
+    /// Returns the set of free variables referenced in this AST node.
+    ///
+    /// Traverses the entire AST and collects all variable names.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rhizome_dew_core::{Expr, Ast};
+    ///
+    /// let expr = Expr::parse("sin(x) + y * z").unwrap();
+    /// let vars = expr.ast().free_vars();
+    /// assert!(vars.contains("x"));
+    /// assert!(vars.contains("y"));
+    /// assert!(vars.contains("z"));
+    /// ```
+    pub fn free_vars(&self) -> HashSet<&str> {
+        let mut vars = HashSet::new();
+        self.collect_vars(&mut vars);
+        vars
+    }
+
+    fn collect_vars<'a>(&'a self, vars: &mut HashSet<&'a str>) {
+        match self {
+            Ast::Num(_) => {}
+            Ast::Var(name) => {
+                vars.insert(name.as_str());
+            }
+            Ast::BinOp(_, left, right) => {
+                left.collect_vars(vars);
+                right.collect_vars(vars);
+            }
+            Ast::UnaryOp(_, inner) => {
+                inner.collect_vars(vars);
+            }
+            #[cfg(feature = "func")]
+            Ast::Call(_, args) => {
+                for arg in args {
+                    arg.collect_vars(vars);
+                }
+            }
+            #[cfg(feature = "cond")]
+            Ast::Compare(_, left, right) => {
+                left.collect_vars(vars);
+                right.collect_vars(vars);
+            }
+            #[cfg(feature = "cond")]
+            Ast::And(left, right) => {
+                left.collect_vars(vars);
+                right.collect_vars(vars);
+            }
+            #[cfg(feature = "cond")]
+            Ast::Or(left, right) => {
+                left.collect_vars(vars);
+                right.collect_vars(vars);
+            }
+            #[cfg(feature = "cond")]
+            Ast::If(cond, then_expr, else_expr) => {
+                cond.collect_vars(vars);
+                then_expr.collect_vars(vars);
+                else_expr.collect_vars(vars);
+            }
+        }
+    }
+}
+
+// ============================================================================
 // Parser
 // ============================================================================
 
@@ -882,6 +956,27 @@ impl Expr {
     /// a different target (WGSL, Lua, etc.).
     pub fn ast(&self) -> &Ast {
         &self.ast
+    }
+
+    /// Returns the set of free variables referenced in the expression.
+    ///
+    /// This is useful for determining which variables need to be provided
+    /// at evaluation time, or for building dependency graphs.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rhizome_dew_core::Expr;
+    ///
+    /// let expr = Expr::parse("x * 2 + y").unwrap();
+    /// let vars = expr.free_vars();
+    /// assert!(vars.contains("x"));
+    /// assert!(vars.contains("y"));
+    /// assert_eq!(vars.len(), 2);
+    /// ```
+    #[cfg(feature = "introspect")]
+    pub fn free_vars(&self) -> HashSet<&str> {
+        self.ast.free_vars()
     }
 
     /// Evaluates the expression with the given variables and function registry.
@@ -1429,6 +1524,56 @@ mod tests {
         assert_eq!(eval("1 or 0 and 0", &[]), 1.0); // 1 or (0 and 0) = 1 or 0 = 1
         assert_eq!(eval("0 or 1 and 1", &[]), 1.0); // 0 or (1 and 1) = 0 or 1 = 1
         assert_eq!(eval("0 or 0 and 1", &[]), 0.0); // 0 or (0 and 1) = 0 or 0 = 0
+    }
+
+    // Free variables tests (introspect feature)
+    #[cfg(feature = "introspect")]
+    #[test]
+    fn test_free_vars_simple() {
+        let expr = Expr::parse("x + y").unwrap();
+        let vars = expr.free_vars();
+        assert_eq!(vars.len(), 2);
+        assert!(vars.contains("x"));
+        assert!(vars.contains("y"));
+    }
+
+    #[cfg(feature = "introspect")]
+    #[test]
+    fn test_free_vars_no_vars() {
+        let expr = Expr::parse("1 + 2 * 3").unwrap();
+        let vars = expr.free_vars();
+        assert!(vars.is_empty());
+    }
+
+    #[cfg(feature = "introspect")]
+    #[test]
+    fn test_free_vars_duplicates() {
+        let expr = Expr::parse("x + x * x").unwrap();
+        let vars = expr.free_vars();
+        assert_eq!(vars.len(), 1);
+        assert!(vars.contains("x"));
+    }
+
+    #[cfg(all(feature = "introspect", feature = "func"))]
+    #[test]
+    fn test_free_vars_in_call() {
+        let expr = Expr::parse("sin(x) + cos(y)").unwrap();
+        let vars = expr.free_vars();
+        assert_eq!(vars.len(), 2);
+        assert!(vars.contains("x"));
+        assert!(vars.contains("y"));
+    }
+
+    #[cfg(all(feature = "introspect", feature = "cond"))]
+    #[test]
+    fn test_free_vars_in_conditional() {
+        let expr = Expr::parse("if a > b then x else y").unwrap();
+        let vars = expr.free_vars();
+        assert_eq!(vars.len(), 4);
+        assert!(vars.contains("a"));
+        assert!(vars.contains("b"));
+        assert!(vars.contains("x"));
+        assert!(vars.contains("y"));
     }
 }
 
