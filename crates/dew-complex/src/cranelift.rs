@@ -8,7 +8,10 @@
 //! - Complex: two f32 values (real, imag)
 
 use crate::Type;
-use cranelift_codegen::ir::{AbiParam, FuncRef, InstBuilder, Value as CraneliftValue, types};
+use cranelift_codegen::ir::immediates::Offset32;
+use cranelift_codegen::ir::{
+    AbiParam, FuncRef, InstBuilder, MemFlags, Value as CraneliftValue, types,
+};
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{Linkage, Module};
@@ -148,6 +151,13 @@ impl TypedValue {
             _ => None,
         }
     }
+
+    fn as_complex(&self) -> Option<[CraneliftValue; 2]> {
+        match self {
+            TypedValue::Complex(v) => Some(*v),
+            _ => None,
+        }
+    }
 }
 
 // ============================================================================
@@ -191,6 +201,68 @@ pub struct CompiledComplexFn {
 
 unsafe impl Send for CompiledComplexFn {}
 unsafe impl Sync for CompiledComplexFn {}
+
+/// A compiled complex function that returns a complex value (two f32s).
+/// Uses output pointer approach for reliable ABI handling.
+pub struct CompiledComplexPairFn {
+    _module: JITModule,
+    func_ptr: *const u8,
+    param_count: usize,
+}
+
+unsafe impl Send for CompiledComplexPairFn {}
+unsafe impl Sync for CompiledComplexPairFn {}
+
+impl CompiledComplexPairFn {
+    /// Calls the compiled function, returning a complex value as [re, im].
+    pub fn call(&self, args: &[f32]) -> [f32; 2] {
+        assert_eq!(args.len(), self.param_count, "wrong number of arguments");
+
+        let mut output = [0.0f32; 2];
+        let out_ptr = output.as_mut_ptr();
+
+        unsafe {
+            match self.param_count {
+                0 => {
+                    let f: extern "C" fn(*mut f32) = std::mem::transmute(self.func_ptr);
+                    f(out_ptr)
+                }
+                1 => {
+                    let f: extern "C" fn(f32, *mut f32) = std::mem::transmute(self.func_ptr);
+                    f(args[0], out_ptr)
+                }
+                2 => {
+                    let f: extern "C" fn(f32, f32, *mut f32) = std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], out_ptr)
+                }
+                3 => {
+                    let f: extern "C" fn(f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], out_ptr)
+                }
+                4 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], args[3], out_ptr)
+                }
+                5 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], args[3], args[4], out_ptr)
+                }
+                6 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(
+                        args[0], args[1], args[2], args[3], args[4], args[5], out_ptr,
+                    )
+                }
+                _ => panic!("too many parameters (max 6 for complex)"),
+            };
+        }
+        output
+    }
+}
 
 impl CompiledComplexFn {
     /// Calls the compiled function.
@@ -375,6 +447,131 @@ impl ComplexJit {
         let func_ptr = module.get_finalized_function(func_id);
 
         Ok(CompiledComplexFn {
+            _module: module,
+            func_ptr,
+            param_count: total_params,
+        })
+    }
+
+    /// Compiles an expression that returns a complex value.
+    /// The compiled function takes an output pointer as the last argument.
+    pub fn compile_complex(
+        self,
+        ast: &Ast,
+        vars: &[VarSpec],
+    ) -> Result<CompiledComplexPairFn, CraneliftError> {
+        let mut module = JITModule::new(self.builder);
+        let mut ctx = module.make_context();
+
+        // Declare math functions
+        let sig_f32_f32 = {
+            let mut sig = module.make_signature();
+            sig.params.push(AbiParam::new(types::F32));
+            sig.returns.push(AbiParam::new(types::F32));
+            sig
+        };
+        let sig_f32_f32_f32 = {
+            let mut sig = module.make_signature();
+            sig.params.push(AbiParam::new(types::F32));
+            sig.params.push(AbiParam::new(types::F32));
+            sig.returns.push(AbiParam::new(types::F32));
+            sig
+        };
+
+        let sqrt_id = module
+            .declare_function("complex_sqrt", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let pow_id = module
+            .declare_function("complex_pow", Linkage::Import, &sig_f32_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let atan2_id = module
+            .declare_function("complex_atan2", Linkage::Import, &sig_f32_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        // Build function signature - input params + output pointer, no return
+        let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
+        let ptr_type = module.target_config().pointer_type();
+        let mut sig = module.make_signature();
+        for _ in 0..total_params {
+            sig.params.push(AbiParam::new(types::F32));
+        }
+        sig.params.push(AbiParam::new(ptr_type)); // output pointer
+        // No return value - writes to pointer
+
+        let func_id = module
+            .declare_function("complex_expr", Linkage::Export, &sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        ctx.func.signature = sig;
+
+        let mut builder_ctx = FunctionBuilderContext::new();
+        {
+            let mut builder = FunctionBuilder::new(&mut ctx.func, &mut builder_ctx);
+            let entry_block = builder.create_block();
+            builder.append_block_params_for_function_params(entry_block);
+            builder.switch_to_block(entry_block);
+            builder.seal_block(entry_block);
+
+            // Import math functions
+            let math_funcs = MathFuncs {
+                sqrt: module.declare_func_in_func(sqrt_id, builder.func),
+                pow: module.declare_func_in_func(pow_id, builder.func),
+                atan2: module.declare_func_in_func(atan2_id, builder.func),
+            };
+
+            // Map variables to typed values (excluding output pointer)
+            let block_params = builder.block_params(entry_block).to_vec();
+            let out_ptr = block_params[total_params]; // Last param is output pointer
+            let mut var_map: HashMap<String, TypedValue> = HashMap::new();
+            let mut param_idx = 0;
+
+            for var in vars {
+                let typed_val = match var.typ {
+                    Type::Scalar => {
+                        let v = TypedValue::Scalar(block_params[param_idx]);
+                        param_idx += 1;
+                        v
+                    }
+                    Type::Complex => {
+                        let v = TypedValue::Complex([
+                            block_params[param_idx],
+                            block_params[param_idx + 1],
+                        ]);
+                        param_idx += 2;
+                        v
+                    }
+                };
+                var_map.insert(var.name.clone(), typed_val);
+            }
+
+            let result = compile_ast(ast, &mut builder, &var_map, &math_funcs)?;
+
+            let [re, im] = result
+                .as_complex()
+                .ok_or(CraneliftError::UnsupportedReturnType(result.typ()))?;
+
+            // Store results to output pointer
+            builder
+                .ins()
+                .store(MemFlags::new(), re, out_ptr, Offset32::new(0));
+            builder
+                .ins()
+                .store(MemFlags::new(), im, out_ptr, Offset32::new(4));
+            builder.ins().return_(&[]);
+            builder.finalize();
+        }
+
+        module
+            .define_function(func_id, &mut ctx)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        module.clear_context(&mut ctx);
+        module
+            .finalize_definitions()
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        let func_ptr = module.get_finalized_function(func_id);
+
+        Ok(CompiledComplexPairFn {
             _module: module,
             func_ptr,
             param_count: total_params,
@@ -731,5 +928,56 @@ mod tests {
             .unwrap();
         let result = func.call(&[4.0, 2.0, 2.0, 0.0]);
         assert!(approx_eq(result, (5.0_f32).sqrt()));
+    }
+
+    #[test]
+    fn test_compile_complex_add() {
+        // (1+2i) + (3+4i) = (4+6i)
+        let expr = Expr::parse("a + b").unwrap();
+        let jit = ComplexJit::new().unwrap();
+        let func = jit
+            .compile_complex(
+                expr.ast(),
+                &[
+                    VarSpec::new("a", Type::Complex),
+                    VarSpec::new("b", Type::Complex),
+                ],
+            )
+            .unwrap();
+        let [re, im] = func.call(&[1.0, 2.0, 3.0, 4.0]);
+        assert!(approx_eq(re, 4.0));
+        assert!(approx_eq(im, 6.0));
+    }
+
+    #[test]
+    fn test_compile_complex_mul() {
+        // (1+2i) * (3+4i) = (1*3 - 2*4) + (1*4 + 2*3)i = -5 + 10i
+        let expr = Expr::parse("a * b").unwrap();
+        let jit = ComplexJit::new().unwrap();
+        let func = jit
+            .compile_complex(
+                expr.ast(),
+                &[
+                    VarSpec::new("a", Type::Complex),
+                    VarSpec::new("b", Type::Complex),
+                ],
+            )
+            .unwrap();
+        let [re, im] = func.call(&[1.0, 2.0, 3.0, 4.0]);
+        assert!(approx_eq(re, -5.0));
+        assert!(approx_eq(im, 10.0));
+    }
+
+    #[test]
+    fn test_compile_complex_conj() {
+        // conj(3+4i) = 3-4i
+        let expr = Expr::parse("conj(z)").unwrap();
+        let jit = ComplexJit::new().unwrap();
+        let func = jit
+            .compile_complex(expr.ast(), &[VarSpec::new("z", Type::Complex)])
+            .unwrap();
+        let [re, im] = func.call(&[3.0, 4.0]);
+        assert!(approx_eq(re, 3.0));
+        assert!(approx_eq(im, -4.0));
     }
 }

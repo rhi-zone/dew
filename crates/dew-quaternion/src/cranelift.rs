@@ -9,7 +9,10 @@
 //! - Quaternion: four f32 values (x, y, z, w)
 
 use crate::Type;
-use cranelift_codegen::ir::{AbiParam, FuncRef, InstBuilder, Value as CraneliftValue, types};
+use cranelift_codegen::ir::immediates::Offset32;
+use cranelift_codegen::ir::{
+    AbiParam, FuncRef, InstBuilder, MemFlags, Value as CraneliftValue, types,
+};
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{Linkage, Module};
@@ -137,6 +140,20 @@ impl TypedValue {
             _ => None,
         }
     }
+
+    fn as_vec3(&self) -> Option<[CraneliftValue; 3]> {
+        match self {
+            TypedValue::Vec3(v) => Some(*v),
+            _ => None,
+        }
+    }
+
+    fn as_quaternion(&self) -> Option<[CraneliftValue; 4]> {
+        match self {
+            TypedValue::Quaternion(v) => Some(*v),
+            _ => None,
+        }
+    }
 }
 
 // ============================================================================
@@ -237,6 +254,160 @@ impl CompiledQuaternionFn {
                 _ => panic!("too many parameters (max 8 for quaternion)"),
             }
         }
+    }
+}
+
+/// A compiled quaternion function that returns a Vec3 (three f32s).
+/// Uses output pointer approach for reliable ABI handling.
+pub struct CompiledVec3Fn {
+    _module: JITModule,
+    func_ptr: *const u8,
+    param_count: usize,
+}
+
+unsafe impl Send for CompiledVec3Fn {}
+unsafe impl Sync for CompiledVec3Fn {}
+
+impl CompiledVec3Fn {
+    /// Calls the compiled function, returning a Vec3 as [x, y, z].
+    pub fn call(&self, args: &[f32]) -> [f32; 3] {
+        assert_eq!(args.len(), self.param_count, "wrong number of arguments");
+
+        let mut output = [0.0f32; 3];
+        let out_ptr = output.as_mut_ptr();
+
+        unsafe {
+            match self.param_count {
+                0 => {
+                    let f: extern "C" fn(*mut f32) = std::mem::transmute(self.func_ptr);
+                    f(out_ptr)
+                }
+                1 => {
+                    let f: extern "C" fn(f32, *mut f32) = std::mem::transmute(self.func_ptr);
+                    f(args[0], out_ptr)
+                }
+                2 => {
+                    let f: extern "C" fn(f32, f32, *mut f32) = std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], out_ptr)
+                }
+                3 => {
+                    let f: extern "C" fn(f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], out_ptr)
+                }
+                4 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], args[3], out_ptr)
+                }
+                5 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], args[3], args[4], out_ptr)
+                }
+                6 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(
+                        args[0], args[1], args[2], args[3], args[4], args[5], out_ptr,
+                    )
+                }
+                7 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(
+                        args[0], args[1], args[2], args[3], args[4], args[5], args[6], out_ptr,
+                    )
+                }
+                8 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(
+                        args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7],
+                        out_ptr,
+                    )
+                }
+                _ => panic!("too many parameters (max 8 for quaternion)"),
+            };
+        }
+        output
+    }
+}
+
+/// A compiled quaternion function that returns a Quaternion (four f32s).
+/// Uses output pointer approach for reliable ABI handling.
+pub struct CompiledQuatFn {
+    _module: JITModule,
+    func_ptr: *const u8,
+    param_count: usize,
+}
+
+unsafe impl Send for CompiledQuatFn {}
+unsafe impl Sync for CompiledQuatFn {}
+
+impl CompiledQuatFn {
+    /// Calls the compiled function, returning a Quaternion as [x, y, z, w].
+    pub fn call(&self, args: &[f32]) -> [f32; 4] {
+        assert_eq!(args.len(), self.param_count, "wrong number of arguments");
+
+        let mut output = [0.0f32; 4];
+        let out_ptr = output.as_mut_ptr();
+
+        unsafe {
+            match self.param_count {
+                0 => {
+                    let f: extern "C" fn(*mut f32) = std::mem::transmute(self.func_ptr);
+                    f(out_ptr)
+                }
+                1 => {
+                    let f: extern "C" fn(f32, *mut f32) = std::mem::transmute(self.func_ptr);
+                    f(args[0], out_ptr)
+                }
+                2 => {
+                    let f: extern "C" fn(f32, f32, *mut f32) = std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], out_ptr)
+                }
+                3 => {
+                    let f: extern "C" fn(f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], out_ptr)
+                }
+                4 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], args[3], out_ptr)
+                }
+                5 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], args[3], args[4], out_ptr)
+                }
+                6 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(
+                        args[0], args[1], args[2], args[3], args[4], args[5], out_ptr,
+                    )
+                }
+                7 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(
+                        args[0], args[1], args[2], args[3], args[4], args[5], args[6], out_ptr,
+                    )
+                }
+                8 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(
+                        args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7],
+                        out_ptr,
+                    )
+                }
+                _ => panic!("too many parameters (max 8 for quaternion)"),
+            };
+        }
+        output
     }
 }
 
@@ -401,6 +572,295 @@ impl QuaternionJit {
         let func_ptr = module.get_finalized_function(func_id);
 
         Ok(CompiledQuaternionFn {
+            _module: module,
+            func_ptr,
+            param_count: total_params,
+        })
+    }
+
+    /// Compiles an expression that returns a Vec3.
+    /// The compiled function takes an output pointer as the last argument.
+    pub fn compile_vec3(
+        self,
+        ast: &Ast,
+        vars: &[VarSpec],
+    ) -> Result<CompiledVec3Fn, CraneliftError> {
+        let mut module = JITModule::new(self.builder);
+        let mut ctx = module.make_context();
+
+        // Declare math functions
+        let sig_f32_f32 = {
+            let mut sig = module.make_signature();
+            sig.params.push(AbiParam::new(types::F32));
+            sig.returns.push(AbiParam::new(types::F32));
+            sig
+        };
+        let sig_f32_f32_f32 = {
+            let mut sig = module.make_signature();
+            sig.params.push(AbiParam::new(types::F32));
+            sig.params.push(AbiParam::new(types::F32));
+            sig.returns.push(AbiParam::new(types::F32));
+            sig
+        };
+
+        let sqrt_id = module
+            .declare_function("quat_sqrt", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let pow_id = module
+            .declare_function("quat_pow", Linkage::Import, &sig_f32_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let acos_id = module
+            .declare_function("quat_acos", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let sin_id = module
+            .declare_function("quat_sin", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let cos_id = module
+            .declare_function("quat_cos", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        // Build function signature - input params + output pointer, no return
+        let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
+        let ptr_type = module.target_config().pointer_type();
+        let mut sig = module.make_signature();
+        for _ in 0..total_params {
+            sig.params.push(AbiParam::new(types::F32));
+        }
+        sig.params.push(AbiParam::new(ptr_type)); // output pointer
+
+        let func_id = module
+            .declare_function("quat_expr", Linkage::Export, &sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        ctx.func.signature = sig;
+
+        let mut builder_ctx = FunctionBuilderContext::new();
+        {
+            let mut builder = FunctionBuilder::new(&mut ctx.func, &mut builder_ctx);
+            let entry_block = builder.create_block();
+            builder.append_block_params_for_function_params(entry_block);
+            builder.switch_to_block(entry_block);
+            builder.seal_block(entry_block);
+
+            let math_funcs = MathFuncs {
+                sqrt: module.declare_func_in_func(sqrt_id, builder.func),
+                pow: module.declare_func_in_func(pow_id, builder.func),
+                acos: module.declare_func_in_func(acos_id, builder.func),
+                sin: module.declare_func_in_func(sin_id, builder.func),
+                cos: module.declare_func_in_func(cos_id, builder.func),
+            };
+
+            let block_params = builder.block_params(entry_block).to_vec();
+            let out_ptr = block_params[total_params];
+            let mut var_map: HashMap<String, TypedValue> = HashMap::new();
+            let mut param_idx = 0;
+
+            for var in vars {
+                let typed_val = match var.typ {
+                    Type::Scalar => {
+                        let v = TypedValue::Scalar(block_params[param_idx]);
+                        param_idx += 1;
+                        v
+                    }
+                    Type::Vec3 => {
+                        let v = TypedValue::Vec3([
+                            block_params[param_idx],
+                            block_params[param_idx + 1],
+                            block_params[param_idx + 2],
+                        ]);
+                        param_idx += 3;
+                        v
+                    }
+                    Type::Quaternion => {
+                        let v = TypedValue::Quaternion([
+                            block_params[param_idx],
+                            block_params[param_idx + 1],
+                            block_params[param_idx + 2],
+                            block_params[param_idx + 3],
+                        ]);
+                        param_idx += 4;
+                        v
+                    }
+                };
+                var_map.insert(var.name.clone(), typed_val);
+            }
+
+            let result = compile_ast(ast, &mut builder, &var_map, &math_funcs)?;
+
+            let [x, y, z] = result
+                .as_vec3()
+                .ok_or(CraneliftError::UnsupportedReturnType(result.typ()))?;
+
+            builder
+                .ins()
+                .store(MemFlags::new(), x, out_ptr, Offset32::new(0));
+            builder
+                .ins()
+                .store(MemFlags::new(), y, out_ptr, Offset32::new(4));
+            builder
+                .ins()
+                .store(MemFlags::new(), z, out_ptr, Offset32::new(8));
+            builder.ins().return_(&[]);
+            builder.finalize();
+        }
+
+        module
+            .define_function(func_id, &mut ctx)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        module.clear_context(&mut ctx);
+        module
+            .finalize_definitions()
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        let func_ptr = module.get_finalized_function(func_id);
+
+        Ok(CompiledVec3Fn {
+            _module: module,
+            func_ptr,
+            param_count: total_params,
+        })
+    }
+
+    /// Compiles an expression that returns a Quaternion.
+    /// The compiled function takes an output pointer as the last argument.
+    pub fn compile_quaternion(
+        self,
+        ast: &Ast,
+        vars: &[VarSpec],
+    ) -> Result<CompiledQuatFn, CraneliftError> {
+        let mut module = JITModule::new(self.builder);
+        let mut ctx = module.make_context();
+
+        // Declare math functions
+        let sig_f32_f32 = {
+            let mut sig = module.make_signature();
+            sig.params.push(AbiParam::new(types::F32));
+            sig.returns.push(AbiParam::new(types::F32));
+            sig
+        };
+        let sig_f32_f32_f32 = {
+            let mut sig = module.make_signature();
+            sig.params.push(AbiParam::new(types::F32));
+            sig.params.push(AbiParam::new(types::F32));
+            sig.returns.push(AbiParam::new(types::F32));
+            sig
+        };
+
+        let sqrt_id = module
+            .declare_function("quat_sqrt", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let pow_id = module
+            .declare_function("quat_pow", Linkage::Import, &sig_f32_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let acos_id = module
+            .declare_function("quat_acos", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let sin_id = module
+            .declare_function("quat_sin", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let cos_id = module
+            .declare_function("quat_cos", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        // Build function signature - input params + output pointer, no return
+        let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
+        let ptr_type = module.target_config().pointer_type();
+        let mut sig = module.make_signature();
+        for _ in 0..total_params {
+            sig.params.push(AbiParam::new(types::F32));
+        }
+        sig.params.push(AbiParam::new(ptr_type)); // output pointer
+
+        let func_id = module
+            .declare_function("quat_expr", Linkage::Export, &sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        ctx.func.signature = sig;
+
+        let mut builder_ctx = FunctionBuilderContext::new();
+        {
+            let mut builder = FunctionBuilder::new(&mut ctx.func, &mut builder_ctx);
+            let entry_block = builder.create_block();
+            builder.append_block_params_for_function_params(entry_block);
+            builder.switch_to_block(entry_block);
+            builder.seal_block(entry_block);
+
+            let math_funcs = MathFuncs {
+                sqrt: module.declare_func_in_func(sqrt_id, builder.func),
+                pow: module.declare_func_in_func(pow_id, builder.func),
+                acos: module.declare_func_in_func(acos_id, builder.func),
+                sin: module.declare_func_in_func(sin_id, builder.func),
+                cos: module.declare_func_in_func(cos_id, builder.func),
+            };
+
+            let block_params = builder.block_params(entry_block).to_vec();
+            let out_ptr = block_params[total_params];
+            let mut var_map: HashMap<String, TypedValue> = HashMap::new();
+            let mut param_idx = 0;
+
+            for var in vars {
+                let typed_val = match var.typ {
+                    Type::Scalar => {
+                        let v = TypedValue::Scalar(block_params[param_idx]);
+                        param_idx += 1;
+                        v
+                    }
+                    Type::Vec3 => {
+                        let v = TypedValue::Vec3([
+                            block_params[param_idx],
+                            block_params[param_idx + 1],
+                            block_params[param_idx + 2],
+                        ]);
+                        param_idx += 3;
+                        v
+                    }
+                    Type::Quaternion => {
+                        let v = TypedValue::Quaternion([
+                            block_params[param_idx],
+                            block_params[param_idx + 1],
+                            block_params[param_idx + 2],
+                            block_params[param_idx + 3],
+                        ]);
+                        param_idx += 4;
+                        v
+                    }
+                };
+                var_map.insert(var.name.clone(), typed_val);
+            }
+
+            let result = compile_ast(ast, &mut builder, &var_map, &math_funcs)?;
+
+            let [x, y, z, w] = result
+                .as_quaternion()
+                .ok_or(CraneliftError::UnsupportedReturnType(result.typ()))?;
+
+            builder
+                .ins()
+                .store(MemFlags::new(), x, out_ptr, Offset32::new(0));
+            builder
+                .ins()
+                .store(MemFlags::new(), y, out_ptr, Offset32::new(4));
+            builder
+                .ins()
+                .store(MemFlags::new(), z, out_ptr, Offset32::new(8));
+            builder
+                .ins()
+                .store(MemFlags::new(), w, out_ptr, Offset32::new(12));
+            builder.ins().return_(&[]);
+            builder.finalize();
+        }
+
+        module
+            .define_function(func_id, &mut ctx)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        module.clear_context(&mut ctx);
+        module
+            .finalize_definitions()
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        let func_ptr = module.get_finalized_function(func_id);
+
+        Ok(CompiledQuatFn {
             _module: module,
             func_ptr,
             param_count: total_params,
@@ -797,5 +1257,72 @@ mod tests {
             func.call(&[1.0, 2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
             3.0
         ));
+    }
+
+    #[test]
+    fn test_compile_vec3_add() {
+        // [1, 2, 3] + [4, 5, 6] = [5, 7, 9]
+        let expr = Expr::parse("a + b").unwrap();
+        let jit = QuaternionJit::new().unwrap();
+        let func = jit
+            .compile_vec3(
+                expr.ast(),
+                &[VarSpec::new("a", Type::Vec3), VarSpec::new("b", Type::Vec3)],
+            )
+            .unwrap();
+        let [x, y, z] = func.call(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+        assert!(approx_eq(x, 5.0));
+        assert!(approx_eq(y, 7.0));
+        assert!(approx_eq(z, 9.0));
+    }
+
+    #[test]
+    fn test_compile_vec3_scalar_mul() {
+        // [1, 2, 3] * 2 = [2, 4, 6]
+        let expr = Expr::parse("v * 2").unwrap();
+        let jit = QuaternionJit::new().unwrap();
+        let func = jit
+            .compile_vec3(expr.ast(), &[VarSpec::new("v", Type::Vec3)])
+            .unwrap();
+        let [x, y, z] = func.call(&[1.0, 2.0, 3.0]);
+        assert!(approx_eq(x, 2.0));
+        assert!(approx_eq(y, 4.0));
+        assert!(approx_eq(z, 6.0));
+    }
+
+    #[test]
+    fn test_compile_quaternion_add() {
+        // [1, 0, 0, 0] + [0, 1, 0, 0] = [1, 1, 0, 0]
+        let expr = Expr::parse("a + b").unwrap();
+        let jit = QuaternionJit::new().unwrap();
+        let func = jit
+            .compile_quaternion(
+                expr.ast(),
+                &[
+                    VarSpec::new("a", Type::Quaternion),
+                    VarSpec::new("b", Type::Quaternion),
+                ],
+            )
+            .unwrap();
+        let [x, y, z, w] = func.call(&[1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
+        assert!(approx_eq(x, 1.0));
+        assert!(approx_eq(y, 1.0));
+        assert!(approx_eq(z, 0.0));
+        assert!(approx_eq(w, 0.0));
+    }
+
+    #[test]
+    fn test_compile_quaternion_conj() {
+        // conj([1, 2, 3, 4]) = [-1, -2, -3, 4]
+        let expr = Expr::parse("conj(q)").unwrap();
+        let jit = QuaternionJit::new().unwrap();
+        let func = jit
+            .compile_quaternion(expr.ast(), &[VarSpec::new("q", Type::Quaternion)])
+            .unwrap();
+        let [x, y, z, w] = func.call(&[1.0, 2.0, 3.0, 4.0]);
+        assert!(approx_eq(x, -1.0));
+        assert!(approx_eq(y, -2.0));
+        assert!(approx_eq(z, -3.0));
+        assert!(approx_eq(w, 4.0));
     }
 }
