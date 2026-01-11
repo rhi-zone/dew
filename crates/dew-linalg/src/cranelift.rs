@@ -13,7 +13,10 @@
 //! (using dot, length, distance, etc. on vectors).
 
 use crate::Type;
-use cranelift_codegen::ir::{AbiParam, FuncRef, InstBuilder, Value as CraneliftValue, types};
+use cranelift_codegen::ir::immediates::Offset32;
+use cranelift_codegen::ir::{
+    AbiParam, FuncRef, InstBuilder, MemFlags, Value as CraneliftValue, types,
+};
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{Linkage, Module};
@@ -127,6 +130,29 @@ impl TypedValue {
             _ => None,
         }
     }
+
+    fn as_vec2(&self) -> Option<[CraneliftValue; 2]> {
+        match self {
+            TypedValue::Vec2(v) => Some(*v),
+            _ => None,
+        }
+    }
+
+    fn as_vec3(&self) -> Option<[CraneliftValue; 3]> {
+        match self {
+            TypedValue::Vec3(v) => Some(*v),
+            _ => None,
+        }
+    }
+
+    #[cfg(feature = "4d")]
+    #[allow(dead_code)]
+    fn as_vec4(&self) -> Option<[CraneliftValue; 4]> {
+        match self {
+            TypedValue::Vec4(v) => Some(*v),
+            _ => None,
+        }
+    }
 }
 
 // ============================================================================
@@ -236,6 +262,130 @@ impl CompiledLinalgFn {
                 _ => panic!("too many parameters (max 8 for linalg)"),
             }
         }
+    }
+}
+
+/// A compiled linalg function that returns a Vec2 (two f32s).
+/// Uses output pointer approach for reliable ABI handling.
+pub struct CompiledVec2Fn {
+    _module: JITModule,
+    func_ptr: *const u8,
+    param_count: usize,
+}
+
+unsafe impl Send for CompiledVec2Fn {}
+unsafe impl Sync for CompiledVec2Fn {}
+
+impl CompiledVec2Fn {
+    /// Calls the compiled function, returning a Vec2 as [x, y].
+    pub fn call(&self, args: &[f32]) -> [f32; 2] {
+        assert_eq!(args.len(), self.param_count, "wrong number of arguments");
+
+        let mut output = [0.0f32; 2];
+        let out_ptr = output.as_mut_ptr();
+
+        unsafe {
+            match self.param_count {
+                0 => {
+                    let f: extern "C" fn(*mut f32) = std::mem::transmute(self.func_ptr);
+                    f(out_ptr)
+                }
+                1 => {
+                    let f: extern "C" fn(f32, *mut f32) = std::mem::transmute(self.func_ptr);
+                    f(args[0], out_ptr)
+                }
+                2 => {
+                    let f: extern "C" fn(f32, f32, *mut f32) = std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], out_ptr)
+                }
+                3 => {
+                    let f: extern "C" fn(f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], out_ptr)
+                }
+                4 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], args[3], out_ptr)
+                }
+                5 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], args[3], args[4], out_ptr)
+                }
+                6 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(
+                        args[0], args[1], args[2], args[3], args[4], args[5], out_ptr,
+                    )
+                }
+                _ => panic!("too many parameters (max 6 for linalg vec output)"),
+            };
+        }
+        output
+    }
+}
+
+/// A compiled linalg function that returns a Vec3 (three f32s).
+/// Uses output pointer approach for reliable ABI handling.
+pub struct CompiledVec3Fn {
+    _module: JITModule,
+    func_ptr: *const u8,
+    param_count: usize,
+}
+
+unsafe impl Send for CompiledVec3Fn {}
+unsafe impl Sync for CompiledVec3Fn {}
+
+impl CompiledVec3Fn {
+    /// Calls the compiled function, returning a Vec3 as [x, y, z].
+    pub fn call(&self, args: &[f32]) -> [f32; 3] {
+        assert_eq!(args.len(), self.param_count, "wrong number of arguments");
+
+        let mut output = [0.0f32; 3];
+        let out_ptr = output.as_mut_ptr();
+
+        unsafe {
+            match self.param_count {
+                0 => {
+                    let f: extern "C" fn(*mut f32) = std::mem::transmute(self.func_ptr);
+                    f(out_ptr)
+                }
+                1 => {
+                    let f: extern "C" fn(f32, *mut f32) = std::mem::transmute(self.func_ptr);
+                    f(args[0], out_ptr)
+                }
+                2 => {
+                    let f: extern "C" fn(f32, f32, *mut f32) = std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], out_ptr)
+                }
+                3 => {
+                    let f: extern "C" fn(f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], out_ptr)
+                }
+                4 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], args[3], out_ptr)
+                }
+                5 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(args[0], args[1], args[2], args[3], args[4], out_ptr)
+                }
+                6 => {
+                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, *mut f32) =
+                        std::mem::transmute(self.func_ptr);
+                    f(
+                        args[0], args[1], args[2], args[3], args[4], args[5], out_ptr,
+                    )
+                }
+                _ => panic!("too many parameters (max 6 for linalg vec output)"),
+            };
+        }
+        output
     }
 }
 
@@ -388,6 +538,287 @@ impl LinalgJit {
         let func_ptr = module.get_finalized_function(func_id);
 
         Ok(CompiledLinalgFn {
+            _module: module,
+            func_ptr,
+            param_count: total_params,
+        })
+    }
+
+    /// Compiles an expression that returns a Vec2.
+    /// The compiled function takes an output pointer as the last argument.
+    pub fn compile_vec2(
+        self,
+        ast: &Ast,
+        vars: &[VarSpec],
+    ) -> Result<CompiledVec2Fn, CraneliftError> {
+        let mut module = JITModule::new(self.builder);
+        let mut ctx = module.make_context();
+
+        let sqrt_sig = {
+            let mut sig = module.make_signature();
+            sig.params.push(AbiParam::new(types::F32));
+            sig.returns.push(AbiParam::new(types::F32));
+            sig
+        };
+        let pow_sig = {
+            let mut sig = module.make_signature();
+            sig.params.push(AbiParam::new(types::F32));
+            sig.params.push(AbiParam::new(types::F32));
+            sig.returns.push(AbiParam::new(types::F32));
+            sig
+        };
+
+        let sqrt_id = module
+            .declare_function("linalg_sqrt", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let pow_id = module
+            .declare_function("linalg_pow", Linkage::Import, &pow_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
+        let ptr_type = module.target_config().pointer_type();
+        let mut sig = module.make_signature();
+        for _ in 0..total_params {
+            sig.params.push(AbiParam::new(types::F32));
+        }
+        sig.params.push(AbiParam::new(ptr_type));
+
+        let func_id = module
+            .declare_function("linalg_expr", Linkage::Export, &sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        ctx.func.signature = sig;
+
+        let mut builder_ctx = FunctionBuilderContext::new();
+        {
+            let mut builder = FunctionBuilder::new(&mut ctx.func, &mut builder_ctx);
+            let entry_block = builder.create_block();
+            builder.append_block_params_for_function_params(entry_block);
+            builder.switch_to_block(entry_block);
+            builder.seal_block(entry_block);
+
+            let sqrt_ref = module.declare_func_in_func(sqrt_id, builder.func);
+            let pow_ref = module.declare_func_in_func(pow_id, builder.func);
+
+            let block_params = builder.block_params(entry_block).to_vec();
+            let out_ptr = block_params[total_params];
+            let mut var_map: HashMap<String, TypedValue> = HashMap::new();
+            let mut param_idx = 0;
+
+            for var in vars {
+                let typed_val = match var.typ {
+                    Type::Scalar => {
+                        let v = TypedValue::Scalar(block_params[param_idx]);
+                        param_idx += 1;
+                        v
+                    }
+                    Type::Vec2 => {
+                        let v = TypedValue::Vec2([
+                            block_params[param_idx],
+                            block_params[param_idx + 1],
+                        ]);
+                        param_idx += 2;
+                        v
+                    }
+                    #[cfg(feature = "3d")]
+                    Type::Vec3 => {
+                        let v = TypedValue::Vec3([
+                            block_params[param_idx],
+                            block_params[param_idx + 1],
+                            block_params[param_idx + 2],
+                        ]);
+                        param_idx += 3;
+                        v
+                    }
+                    #[cfg(feature = "4d")]
+                    Type::Vec4 => {
+                        let v = TypedValue::Vec4([
+                            block_params[param_idx],
+                            block_params[param_idx + 1],
+                            block_params[param_idx + 2],
+                            block_params[param_idx + 3],
+                        ]);
+                        param_idx += 4;
+                        v
+                    }
+                    _ => return Err(CraneliftError::UnsupportedReturnType(var.typ)),
+                };
+                var_map.insert(var.name.clone(), typed_val);
+            }
+
+            let math_funcs = MathFuncs {
+                sqrt: sqrt_ref,
+                pow: pow_ref,
+            };
+            let result = compile_ast(ast, &mut builder, &var_map, &math_funcs)?;
+
+            let [x, y] = result
+                .as_vec2()
+                .ok_or(CraneliftError::UnsupportedReturnType(result.typ()))?;
+
+            builder
+                .ins()
+                .store(MemFlags::new(), x, out_ptr, Offset32::new(0));
+            builder
+                .ins()
+                .store(MemFlags::new(), y, out_ptr, Offset32::new(4));
+            builder.ins().return_(&[]);
+            builder.finalize();
+        }
+
+        module
+            .define_function(func_id, &mut ctx)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        module.clear_context(&mut ctx);
+        module
+            .finalize_definitions()
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        let func_ptr = module.get_finalized_function(func_id);
+
+        Ok(CompiledVec2Fn {
+            _module: module,
+            func_ptr,
+            param_count: total_params,
+        })
+    }
+
+    /// Compiles an expression that returns a Vec3.
+    /// The compiled function takes an output pointer as the last argument.
+    #[cfg(feature = "3d")]
+    pub fn compile_vec3(
+        self,
+        ast: &Ast,
+        vars: &[VarSpec],
+    ) -> Result<CompiledVec3Fn, CraneliftError> {
+        let mut module = JITModule::new(self.builder);
+        let mut ctx = module.make_context();
+
+        let sqrt_sig = {
+            let mut sig = module.make_signature();
+            sig.params.push(AbiParam::new(types::F32));
+            sig.returns.push(AbiParam::new(types::F32));
+            sig
+        };
+        let pow_sig = {
+            let mut sig = module.make_signature();
+            sig.params.push(AbiParam::new(types::F32));
+            sig.params.push(AbiParam::new(types::F32));
+            sig.returns.push(AbiParam::new(types::F32));
+            sig
+        };
+
+        let sqrt_id = module
+            .declare_function("linalg_sqrt", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let pow_id = module
+            .declare_function("linalg_pow", Linkage::Import, &pow_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
+        let ptr_type = module.target_config().pointer_type();
+        let mut sig = module.make_signature();
+        for _ in 0..total_params {
+            sig.params.push(AbiParam::new(types::F32));
+        }
+        sig.params.push(AbiParam::new(ptr_type));
+
+        let func_id = module
+            .declare_function("linalg_expr", Linkage::Export, &sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        ctx.func.signature = sig;
+
+        let mut builder_ctx = FunctionBuilderContext::new();
+        {
+            let mut builder = FunctionBuilder::new(&mut ctx.func, &mut builder_ctx);
+            let entry_block = builder.create_block();
+            builder.append_block_params_for_function_params(entry_block);
+            builder.switch_to_block(entry_block);
+            builder.seal_block(entry_block);
+
+            let sqrt_ref = module.declare_func_in_func(sqrt_id, builder.func);
+            let pow_ref = module.declare_func_in_func(pow_id, builder.func);
+
+            let block_params = builder.block_params(entry_block).to_vec();
+            let out_ptr = block_params[total_params];
+            let mut var_map: HashMap<String, TypedValue> = HashMap::new();
+            let mut param_idx = 0;
+
+            for var in vars {
+                let typed_val = match var.typ {
+                    Type::Scalar => {
+                        let v = TypedValue::Scalar(block_params[param_idx]);
+                        param_idx += 1;
+                        v
+                    }
+                    Type::Vec2 => {
+                        let v = TypedValue::Vec2([
+                            block_params[param_idx],
+                            block_params[param_idx + 1],
+                        ]);
+                        param_idx += 2;
+                        v
+                    }
+                    Type::Vec3 => {
+                        let v = TypedValue::Vec3([
+                            block_params[param_idx],
+                            block_params[param_idx + 1],
+                            block_params[param_idx + 2],
+                        ]);
+                        param_idx += 3;
+                        v
+                    }
+                    #[cfg(feature = "4d")]
+                    Type::Vec4 => {
+                        let v = TypedValue::Vec4([
+                            block_params[param_idx],
+                            block_params[param_idx + 1],
+                            block_params[param_idx + 2],
+                            block_params[param_idx + 3],
+                        ]);
+                        param_idx += 4;
+                        v
+                    }
+                    _ => return Err(CraneliftError::UnsupportedReturnType(var.typ)),
+                };
+                var_map.insert(var.name.clone(), typed_val);
+            }
+
+            let math_funcs = MathFuncs {
+                sqrt: sqrt_ref,
+                pow: pow_ref,
+            };
+            let result = compile_ast(ast, &mut builder, &var_map, &math_funcs)?;
+
+            let [x, y, z] = result
+                .as_vec3()
+                .ok_or(CraneliftError::UnsupportedReturnType(result.typ()))?;
+
+            builder
+                .ins()
+                .store(MemFlags::new(), x, out_ptr, Offset32::new(0));
+            builder
+                .ins()
+                .store(MemFlags::new(), y, out_ptr, Offset32::new(4));
+            builder
+                .ins()
+                .store(MemFlags::new(), z, out_ptr, Offset32::new(8));
+            builder.ins().return_(&[]);
+            builder.finalize();
+        }
+
+        module
+            .define_function(func_id, &mut ctx)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        module.clear_context(&mut ctx);
+        module
+            .finalize_definitions()
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+
+        let func_ptr = module.get_finalized_function(func_id);
+
+        Ok(CompiledVec3Fn {
             _module: module,
             func_ptr,
             param_count: total_params,
@@ -832,5 +1263,67 @@ mod tests {
             .unwrap();
         // length([3, 4] * 2) = length([6, 8]) = 10
         assert_eq!(func.call(&[3.0, 4.0]), 10.0);
+    }
+
+    #[test]
+    fn test_compile_vec2_add() {
+        // [1, 2] + [3, 4] = [4, 6]
+        let expr = Expr::parse("a + b").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec2(
+                expr.ast(),
+                &[VarSpec::new("a", Type::Vec2), VarSpec::new("b", Type::Vec2)],
+            )
+            .unwrap();
+        let [x, y] = func.call(&[1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(x, 4.0);
+        assert_eq!(y, 6.0);
+    }
+
+    #[test]
+    fn test_compile_vec2_scalar_mul() {
+        // [1, 2] * 3 = [3, 6]
+        let expr = Expr::parse("v * 3").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec2(expr.ast(), &[VarSpec::new("v", Type::Vec2)])
+            .unwrap();
+        let [x, y] = func.call(&[1.0, 2.0]);
+        assert_eq!(x, 3.0);
+        assert_eq!(y, 6.0);
+    }
+
+    #[cfg(feature = "3d")]
+    #[test]
+    fn test_compile_vec3_add() {
+        // [1, 2, 3] + [4, 5, 6] = [5, 7, 9]
+        let expr = Expr::parse("a + b").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec3(
+                expr.ast(),
+                &[VarSpec::new("a", Type::Vec3), VarSpec::new("b", Type::Vec3)],
+            )
+            .unwrap();
+        let [x, y, z] = func.call(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+        assert_eq!(x, 5.0);
+        assert_eq!(y, 7.0);
+        assert_eq!(z, 9.0);
+    }
+
+    #[cfg(feature = "3d")]
+    #[test]
+    fn test_compile_vec3_scalar_mul() {
+        // [1, 2, 3] * 2 = [2, 4, 6]
+        let expr = Expr::parse("v * 2").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec3(expr.ast(), &[VarSpec::new("v", Type::Vec3)])
+            .unwrap();
+        let [x, y, z] = func.call(&[1.0, 2.0, 3.0]);
+        assert_eq!(x, 2.0);
+        assert_eq!(y, 4.0);
+        assert_eq!(z, 6.0);
     }
 }
