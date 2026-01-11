@@ -495,7 +495,7 @@ impl<'a> Lexer<'a> {
 ///     _ => panic!("expected addition"),
 /// }
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Ast {
     /// Numeric literal (e.g., `42`, `3.14`).
     Num(f32),
@@ -571,6 +571,100 @@ pub enum UnaryOp {
     /// Returns `1.0` if operand is `0.0`, otherwise `0.0`.
     #[cfg(feature = "cond")]
     Not,
+}
+
+// ============================================================================
+// AST Display (produces parseable expressions)
+// ============================================================================
+
+impl std::fmt::Display for Ast {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Ast::Num(n) => {
+                if n.is_nan() {
+                    write!(f, "(0.0 / 0.0)") // NaN
+                } else if n.is_infinite() {
+                    if *n > 0.0 {
+                        write!(f, "(1.0 / 0.0)") // +Inf
+                    } else {
+                        write!(f, "(-1.0 / 0.0)") // -Inf
+                    }
+                } else {
+                    write!(f, "{}", n)
+                }
+            }
+            Ast::Var(name) => write!(f, "{}", name),
+            Ast::BinOp(op, left, right) => {
+                write!(f, "({} {} {})", left, op, right)
+            }
+            Ast::UnaryOp(op, inner) => {
+                write!(f, "({}{})", op, inner)
+            }
+            #[cfg(feature = "func")]
+            Ast::Call(name, args) => {
+                write!(f, "{}(", name)?;
+                for (i, arg) in args.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", arg)?;
+                }
+                write!(f, ")")
+            }
+            #[cfg(feature = "cond")]
+            Ast::Compare(op, left, right) => {
+                write!(f, "({} {} {})", left, op, right)
+            }
+            #[cfg(feature = "cond")]
+            Ast::And(left, right) => {
+                write!(f, "({} and {})", left, right)
+            }
+            #[cfg(feature = "cond")]
+            Ast::Or(left, right) => {
+                write!(f, "({} or {})", left, right)
+            }
+            #[cfg(feature = "cond")]
+            Ast::If(cond, then_expr, else_expr) => {
+                write!(f, "(if {} then {} else {})", cond, then_expr, else_expr)
+            }
+        }
+    }
+}
+
+impl std::fmt::Display for BinOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BinOp::Add => write!(f, "+"),
+            BinOp::Sub => write!(f, "-"),
+            BinOp::Mul => write!(f, "*"),
+            BinOp::Div => write!(f, "/"),
+            BinOp::Pow => write!(f, "^"),
+        }
+    }
+}
+
+impl std::fmt::Display for UnaryOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UnaryOp::Neg => write!(f, "-"),
+            #[cfg(feature = "cond")]
+            UnaryOp::Not => write!(f, "not "),
+        }
+    }
+}
+
+#[cfg(feature = "cond")]
+impl std::fmt::Display for CompareOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompareOp::Lt => write!(f, "<"),
+            CompareOp::Le => write!(f, "<="),
+            CompareOp::Gt => write!(f, ">"),
+            CompareOp::Ge => write!(f, ">="),
+            CompareOp::Eq => write!(f, "=="),
+            CompareOp::Ne => write!(f, "!="),
+        }
+    }
 }
 
 // ============================================================================
@@ -1574,6 +1668,75 @@ mod tests {
         assert!(vars.contains("b"));
         assert!(vars.contains("x"));
         assert!(vars.contains("y"));
+    }
+
+    // AST Display / roundtrip tests
+    #[test]
+    fn test_ast_display_simple() {
+        let expr = Expr::parse("1 + 2").unwrap();
+        let s = expr.ast().to_string();
+        assert_eq!(s, "(1 + 2)");
+    }
+
+    #[test]
+    fn test_ast_display_nested() {
+        let expr = Expr::parse("1 + 2 * 3").unwrap();
+        let s = expr.ast().to_string();
+        // Should be fully parenthesized
+        assert_eq!(s, "(1 + (2 * 3))");
+    }
+
+    #[test]
+    fn test_ast_roundtrip() {
+        let cases = [
+            "1 + 2",
+            "x * y",
+            "1 + 2 * 3",
+            "(1 + 2) * 3",
+            "-x",
+            "x ^ 2",
+            "2 ^ 3 ^ 4", // right-associative
+        ];
+        for case in cases {
+            let expr1 = Expr::parse(case).unwrap();
+            let stringified = expr1.ast().to_string();
+            let expr2 = Expr::parse(&stringified).unwrap();
+            let stringified2 = expr2.ast().to_string();
+            assert_eq!(stringified, stringified2, "Roundtrip failed for: {}", case);
+        }
+    }
+
+    #[cfg(feature = "func")]
+    #[test]
+    fn test_ast_roundtrip_func() {
+        let cases = ["sin(x)", "foo(a, b, c)", "f()"];
+        for case in cases {
+            let expr1 = Expr::parse(case).unwrap();
+            let stringified = expr1.ast().to_string();
+            let expr2 = Expr::parse(&stringified).unwrap();
+            let stringified2 = expr2.ast().to_string();
+            assert_eq!(stringified, stringified2, "Roundtrip failed for: {}", case);
+        }
+    }
+
+    #[cfg(feature = "cond")]
+    #[test]
+    fn test_ast_roundtrip_cond() {
+        let cases = [
+            "x < y",
+            "x and y",
+            "x or y",
+            "not x",
+            "if x then y else z",
+            "if a > b then x else y",
+        ];
+        for case in cases {
+            let expr1 = Expr::parse(case).unwrap();
+            let stringified = expr1.ast().to_string();
+            let expr2 = Expr::parse(&stringified).unwrap();
+            let stringified2 = expr2.ast().to_string();
+            assert_eq!(stringified, stringified2, "Roundtrip failed for: {}", case);
+        }
     }
 }
 
