@@ -106,6 +106,9 @@ pub use rhizome_dew_core::CompareOp;
 #[cfg(feature = "wgsl")]
 pub mod wgsl;
 
+#[cfg(feature = "glsl")]
+pub mod glsl;
+
 #[cfg(any(feature = "lua", feature = "lua-codegen"))]
 pub mod lua;
 

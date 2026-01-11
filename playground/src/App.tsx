@@ -17,6 +17,10 @@ type WgslResult =
   | { ok: true; code: string }
   | { ok: false; error: string };
 
+type GlslResult =
+  | { ok: true; code: string }
+  | { ok: false; error: string };
+
 type LuaResult =
   | { ok: true; code: string }
   | { ok: false; error: string };
@@ -25,6 +29,7 @@ type LuaResult =
 interface DewWasm {
   parse: (input: string) => ParseResult;
   emit_wgsl: (input: string) => WgslResult;
+  emit_glsl: (input: string) => GlslResult;
   emit_lua: (input: string) => LuaResult;
 }
 
@@ -36,6 +41,7 @@ async function loadWasm(): Promise<DewWasm | null> {
     return {
       parse: wasm.parse,
       emit_wgsl: wasm.emit_wgsl,
+      emit_glsl: wasm.emit_glsl,
       emit_lua: wasm.emit_lua,
     };
   } catch (e) {
@@ -58,7 +64,7 @@ function mockParse(input: string): ParseResult {
 
 export function App() {
   const [expression, setExpression] = createSignal('sin(x) + cos(y) * 2');
-  const [activeTab, setActiveTab] = createSignal<'ast' | 'wgsl' | 'lua'>('ast');
+  const [activeTab, setActiveTab] = createSignal<'ast' | 'wgsl' | 'glsl' | 'lua'>('ast');
   const [wasm] = createResource(loadWasm);
 
   const parseResult = createMemo((): ParseResult => {
@@ -73,6 +79,12 @@ export function App() {
     const w = wasm();
     if (!w) return { ok: false, error: 'WASM not loaded' };
     return w.emit_wgsl(expression());
+  });
+
+  const glslResult = createMemo((): GlslResult | null => {
+    const w = wasm();
+    if (!w) return { ok: false, error: 'WASM not loaded' };
+    return w.emit_glsl(expression());
   });
 
   const luaResult = createMemo((): LuaResult | null => {
@@ -125,6 +137,12 @@ export function App() {
                 WGSL
               </button>
               <button
+                class={`tabs__tab ${activeTab() === 'glsl' ? 'tabs__tab--active' : ''}`}
+                onClick={() => setActiveTab('glsl')}
+              >
+                GLSL
+              </button>
+              <button
                 class={`tabs__tab ${activeTab() === 'lua' ? 'tabs__tab--active' : ''}`}
                 onClick={() => setActiveTab('lua')}
               >
@@ -149,6 +167,15 @@ export function App() {
                 </div>
               }>
                 <pre class="code-block">{(wgslResult() as { ok: true; code: string }).code}</pre>
+              </Show>
+            </Show>
+            <Show when={activeTab() === 'glsl'}>
+              <Show when={glslResult()?.ok} fallback={
+                <div class="output__value output__value--error">
+                  {(glslResult() as { ok: false; error: string })?.error || 'Error generating GLSL'}
+                </div>
+              }>
+                <pre class="code-block">{(glslResult() as { ok: true; code: string }).code}</pre>
               </Show>
             </Show>
             <Show when={activeTab() === 'lua'}>
