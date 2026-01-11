@@ -170,7 +170,6 @@ body {
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--text-secondary);
-  text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
@@ -277,7 +276,6 @@ body {
 .output__label {
   font-size: 0.75rem;
   color: var(--text-muted);
-  text-transform: uppercase;
   margin-bottom: var(--spacing-xs);
 }
 

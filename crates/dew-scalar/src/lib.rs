@@ -134,6 +134,9 @@ use std::sync::Arc;
 #[cfg(feature = "wgsl")]
 pub mod wgsl;
 
+#[cfg(feature = "glsl")]
+pub mod glsl;
+
 #[cfg(any(feature = "lua", feature = "lua-codegen"))]
 pub mod lua;
 

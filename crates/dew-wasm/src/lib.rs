@@ -147,6 +147,34 @@ pub fn emit_wgsl(input: &str) -> JsValue {
     serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
 }
 
+/// Generate GLSL code from an expression.
+#[wasm_bindgen]
+pub fn emit_glsl(input: &str) -> JsValue {
+    use rhizome_dew_scalar::glsl;
+
+    let result = match Expr::parse(input) {
+        Ok(expr) => match glsl::emit_glsl(expr.ast()) {
+            Ok(glsl_expr) => JsCodeResult {
+                ok: true,
+                code: Some(glsl_expr.code),
+                error: None,
+            },
+            Err(e) => JsCodeResult {
+                ok: false,
+                code: None,
+                error: Some(e.to_string()),
+            },
+        },
+        Err(e) => JsCodeResult {
+            ok: false,
+            code: None,
+            error: Some(e.to_string()),
+        },
+    };
+
+    serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+}
+
 /// Generate Lua code from an expression.
 #[wasm_bindgen]
 pub fn emit_lua(input: &str) -> JsValue {
