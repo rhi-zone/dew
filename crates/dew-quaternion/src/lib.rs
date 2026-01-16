@@ -84,6 +84,9 @@ mod parity_tests;
 #[cfg(feature = "wgsl")]
 pub mod wgsl;
 
+#[cfg(feature = "glsl")]
+pub mod glsl;
+
 #[cfg(feature = "lua")]
 pub mod lua;
 

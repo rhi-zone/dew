@@ -10,9 +10,10 @@ default = ["3d"]
 3d = []           # Vec3, Mat3
 4d = ["3d"]       # Vec4, Mat4 (implies 3d)
 wgsl = ["rhizome-dew-cond/wgsl"]         # WGSL code generation
+glsl = ["rhizome-dew-cond/glsl"]         # GLSL code generation
 lua = ["mlua", "rhizome-dew-cond/lua"]    # Lua code generation
 cranelift = ["cranelift-codegen", "cranelift-frontend", "cranelift-jit", "cranelift-module", "rhizome-dew-cond/cranelift"]
-all = ["3d", "4d", "wgsl", "lua", "cranelift"]
+all = ["3d", "4d", "wgsl", "glsl", "lua", "cranelift"]
 
 [dependencies]
 rhizome-dew-core = { workspace = true, features = ["func"] }
