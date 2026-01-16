@@ -1004,6 +1004,365 @@ fn emit_function_call(name: &str, args: Vec<LuaExpr>) -> Result<LuaExpr, LuaErro
             Ok(LuaExpr { code, typ })
         }
 
+        // ====================================================================
+        // Constructors
+        // ====================================================================
+        "vec2" => {
+            if args.len() != 2 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            Ok(LuaExpr {
+                code: format!("{{{}, {}}}", args[0].code, args[1].code),
+                typ: Type::Vec2,
+            })
+        }
+
+        #[cfg(feature = "3d")]
+        "vec3" => {
+            if args.len() != 3 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            Ok(LuaExpr {
+                code: format!("{{{}, {}, {}}}", args[0].code, args[1].code, args[2].code),
+                typ: Type::Vec3,
+            })
+        }
+
+        #[cfg(feature = "4d")]
+        "vec4" => {
+            if args.len() != 4 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            Ok(LuaExpr {
+                code: format!(
+                    "{{{}, {}, {}, {}}}",
+                    args[0].code, args[1].code, args[2].code, args[3].code
+                ),
+                typ: Type::Vec4,
+            })
+        }
+
+        // ====================================================================
+        // Component extraction
+        // ====================================================================
+        "x" => {
+            if args.len() != 1 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            Ok(LuaExpr {
+                code: format!("{}[1]", args[0].code),
+                typ: Type::Scalar,
+            })
+        }
+
+        "y" => {
+            if args.len() != 1 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            Ok(LuaExpr {
+                code: format!("{}[2]", args[0].code),
+                typ: Type::Scalar,
+            })
+        }
+
+        #[cfg(feature = "3d")]
+        "z" => {
+            if args.len() != 1 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            Ok(LuaExpr {
+                code: format!("{}[3]", args[0].code),
+                typ: Type::Scalar,
+            })
+        }
+
+        #[cfg(feature = "4d")]
+        "w" => {
+            if args.len() != 1 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            Ok(LuaExpr {
+                code: format!("{}[4]", args[0].code),
+                typ: Type::Scalar,
+            })
+        }
+
+        // ====================================================================
+        // Vectorized math functions
+        // ====================================================================
+        "sin" => {
+            if args.len() != 1 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            let v = &args[0].code;
+            let typ = args[0].typ;
+            let code = match typ {
+                Type::Vec2 => format!("{{math.sin({v}[1]), math.sin({v}[2])}}"),
+                #[cfg(feature = "3d")]
+                Type::Vec3 => format!("{{math.sin({v}[1]), math.sin({v}[2]), math.sin({v}[3])}}"),
+                #[cfg(feature = "4d")]
+                Type::Vec4 => format!(
+                    "{{math.sin({v}[1]), math.sin({v}[2]), math.sin({v}[3]), math.sin({v}[4])}}"
+                ),
+                _ => return Err(LuaError::UnsupportedType(typ)),
+            };
+            Ok(LuaExpr { code, typ })
+        }
+
+        "cos" => {
+            if args.len() != 1 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            let v = &args[0].code;
+            let typ = args[0].typ;
+            let code = match typ {
+                Type::Vec2 => format!("{{math.cos({v}[1]), math.cos({v}[2])}}"),
+                #[cfg(feature = "3d")]
+                Type::Vec3 => format!("{{math.cos({v}[1]), math.cos({v}[2]), math.cos({v}[3])}}"),
+                #[cfg(feature = "4d")]
+                Type::Vec4 => format!(
+                    "{{math.cos({v}[1]), math.cos({v}[2]), math.cos({v}[3]), math.cos({v}[4])}}"
+                ),
+                _ => return Err(LuaError::UnsupportedType(typ)),
+            };
+            Ok(LuaExpr { code, typ })
+        }
+
+        "abs" => {
+            if args.len() != 1 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            let v = &args[0].code;
+            let typ = args[0].typ;
+            let code = match typ {
+                Type::Vec2 => format!("{{math.abs({v}[1]), math.abs({v}[2])}}"),
+                #[cfg(feature = "3d")]
+                Type::Vec3 => format!("{{math.abs({v}[1]), math.abs({v}[2]), math.abs({v}[3])}}"),
+                #[cfg(feature = "4d")]
+                Type::Vec4 => format!(
+                    "{{math.abs({v}[1]), math.abs({v}[2]), math.abs({v}[3]), math.abs({v}[4])}}"
+                ),
+                _ => return Err(LuaError::UnsupportedType(typ)),
+            };
+            Ok(LuaExpr { code, typ })
+        }
+
+        "floor" => {
+            if args.len() != 1 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            let v = &args[0].code;
+            let typ = args[0].typ;
+            let code = match typ {
+                Type::Vec2 => format!("{{math.floor({v}[1]), math.floor({v}[2])}}"),
+                #[cfg(feature = "3d")]
+                Type::Vec3 => {
+                    format!("{{math.floor({v}[1]), math.floor({v}[2]), math.floor({v}[3])}}")
+                }
+                #[cfg(feature = "4d")]
+                Type::Vec4 => format!(
+                    "{{math.floor({v}[1]), math.floor({v}[2]), math.floor({v}[3]), math.floor({v}[4])}}"
+                ),
+                _ => return Err(LuaError::UnsupportedType(typ)),
+            };
+            Ok(LuaExpr { code, typ })
+        }
+
+        "fract" => {
+            if args.len() != 1 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            let v = &args[0].code;
+            let typ = args[0].typ;
+            // fract(x) = x - floor(x)
+            let code = match typ {
+                Type::Vec2 => {
+                    format!("{{{v}[1] - math.floor({v}[1]), {v}[2] - math.floor({v}[2])}}")
+                }
+                #[cfg(feature = "3d")]
+                Type::Vec3 => format!(
+                    "{{{v}[1] - math.floor({v}[1]), {v}[2] - math.floor({v}[2]), {v}[3] - math.floor({v}[3])}}"
+                ),
+                #[cfg(feature = "4d")]
+                Type::Vec4 => format!(
+                    "{{{v}[1] - math.floor({v}[1]), {v}[2] - math.floor({v}[2]), {v}[3] - math.floor({v}[3]), {v}[4] - math.floor({v}[4])}}"
+                ),
+                _ => return Err(LuaError::UnsupportedType(typ)),
+            };
+            Ok(LuaExpr { code, typ })
+        }
+
+        "sqrt" => {
+            if args.len() != 1 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            let v = &args[0].code;
+            let typ = args[0].typ;
+            let code = match typ {
+                Type::Vec2 => format!("{{math.sqrt({v}[1]), math.sqrt({v}[2])}}"),
+                #[cfg(feature = "3d")]
+                Type::Vec3 => {
+                    format!("{{math.sqrt({v}[1]), math.sqrt({v}[2]), math.sqrt({v}[3])}}")
+                }
+                #[cfg(feature = "4d")]
+                Type::Vec4 => format!(
+                    "{{math.sqrt({v}[1]), math.sqrt({v}[2]), math.sqrt({v}[3]), math.sqrt({v}[4])}}"
+                ),
+                _ => return Err(LuaError::UnsupportedType(typ)),
+            };
+            Ok(LuaExpr { code, typ })
+        }
+
+        // ====================================================================
+        // Vectorized comparison functions
+        // ====================================================================
+        "min" => {
+            if args.len() != 2 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            let a = &args[0].code;
+            let b = &args[1].code;
+            let typ = args[0].typ;
+            let code = match typ {
+                Type::Vec2 => {
+                    format!("{{math.min({a}[1], {b}[1]), math.min({a}[2], {b}[2])}}")
+                }
+                #[cfg(feature = "3d")]
+                Type::Vec3 => format!(
+                    "{{math.min({a}[1], {b}[1]), math.min({a}[2], {b}[2]), math.min({a}[3], {b}[3])}}"
+                ),
+                #[cfg(feature = "4d")]
+                Type::Vec4 => format!(
+                    "{{math.min({a}[1], {b}[1]), math.min({a}[2], {b}[2]), math.min({a}[3], {b}[3]), math.min({a}[4], {b}[4])}}"
+                ),
+                _ => return Err(LuaError::UnsupportedType(typ)),
+            };
+            Ok(LuaExpr { code, typ })
+        }
+
+        "max" => {
+            if args.len() != 2 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            let a = &args[0].code;
+            let b = &args[1].code;
+            let typ = args[0].typ;
+            let code = match typ {
+                Type::Vec2 => {
+                    format!("{{math.max({a}[1], {b}[1]), math.max({a}[2], {b}[2])}}")
+                }
+                #[cfg(feature = "3d")]
+                Type::Vec3 => format!(
+                    "{{math.max({a}[1], {b}[1]), math.max({a}[2], {b}[2]), math.max({a}[3], {b}[3])}}"
+                ),
+                #[cfg(feature = "4d")]
+                Type::Vec4 => format!(
+                    "{{math.max({a}[1], {b}[1]), math.max({a}[2], {b}[2]), math.max({a}[3], {b}[3]), math.max({a}[4], {b}[4])}}"
+                ),
+                _ => return Err(LuaError::UnsupportedType(typ)),
+            };
+            Ok(LuaExpr { code, typ })
+        }
+
+        "clamp" => {
+            if args.len() != 3 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            let x = &args[0].code;
+            let lo = &args[1].code;
+            let hi = &args[2].code;
+            let typ = args[0].typ;
+            // clamp(x, lo, hi) = max(min(x, hi), lo)
+            let code = match typ {
+                Type::Vec2 => format!(
+                    "{{math.max(math.min({x}[1], {hi}[1]), {lo}[1]), math.max(math.min({x}[2], {hi}[2]), {lo}[2])}}"
+                ),
+                #[cfg(feature = "3d")]
+                Type::Vec3 => format!(
+                    "{{math.max(math.min({x}[1], {hi}[1]), {lo}[1]), math.max(math.min({x}[2], {hi}[2]), {lo}[2]), math.max(math.min({x}[3], {hi}[3]), {lo}[3])}}"
+                ),
+                #[cfg(feature = "4d")]
+                Type::Vec4 => format!(
+                    "{{math.max(math.min({x}[1], {hi}[1]), {lo}[1]), math.max(math.min({x}[2], {hi}[2]), {lo}[2]), math.max(math.min({x}[3], {hi}[3]), {lo}[3]), math.max(math.min({x}[4], {hi}[4]), {lo}[4])}}"
+                ),
+                _ => return Err(LuaError::UnsupportedType(typ)),
+            };
+            Ok(LuaExpr { code, typ })
+        }
+
+        // ====================================================================
+        // Interpolation functions
+        // ====================================================================
+        "step" => {
+            if args.len() != 2 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            let edge = &args[0].code;
+            let x = &args[1].code;
+            let typ = args[1].typ;
+            // step(edge, x) = x < edge ? 0 : 1
+            let code = match typ {
+                Type::Vec2 => {
+                    format!("{{({x}[1] < {edge}[1]) and 0 or 1, ({x}[2] < {edge}[2]) and 0 or 1}}")
+                }
+                #[cfg(feature = "3d")]
+                Type::Vec3 => format!(
+                    "{{({x}[1] < {edge}[1]) and 0 or 1, ({x}[2] < {edge}[2]) and 0 or 1, ({x}[3] < {edge}[3]) and 0 or 1}}"
+                ),
+                #[cfg(feature = "4d")]
+                Type::Vec4 => format!(
+                    "{{({x}[1] < {edge}[1]) and 0 or 1, ({x}[2] < {edge}[2]) and 0 or 1, ({x}[3] < {edge}[3]) and 0 or 1, ({x}[4] < {edge}[4]) and 0 or 1}}"
+                ),
+                _ => return Err(LuaError::UnsupportedType(typ)),
+            };
+            Ok(LuaExpr { code, typ })
+        }
+
+        "smoothstep" => {
+            if args.len() != 3 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            let e0 = &args[0].code;
+            let e1 = &args[1].code;
+            let x = &args[2].code;
+            let typ = args[2].typ;
+            // Use a helper function for smoothstep
+            let code = match typ {
+                Type::Vec2 => format!(
+                    "(function() local function ss(e0, e1, x) local t = math.max(0, math.min(1, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t) end; return {{ss({e0}[1], {e1}[1], {x}[1]), ss({e0}[2], {e1}[2], {x}[2])}} end)()"
+                ),
+                #[cfg(feature = "3d")]
+                Type::Vec3 => format!(
+                    "(function() local function ss(e0, e1, x) local t = math.max(0, math.min(1, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t) end; return {{ss({e0}[1], {e1}[1], {x}[1]), ss({e0}[2], {e1}[2], {x}[2]), ss({e0}[3], {e1}[3], {x}[3])}} end)()"
+                ),
+                #[cfg(feature = "4d")]
+                Type::Vec4 => format!(
+                    "(function() local function ss(e0, e1, x) local t = math.max(0, math.min(1, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t) end; return {{ss({e0}[1], {e1}[1], {x}[1]), ss({e0}[2], {e1}[2], {x}[2]), ss({e0}[3], {e1}[3], {x}[3]), ss({e0}[4], {e1}[4], {x}[4])}} end)()"
+                ),
+                _ => return Err(LuaError::UnsupportedType(typ)),
+            };
+            Ok(LuaExpr { code, typ })
+        }
+
+        // ====================================================================
+        // Transform functions
+        // ====================================================================
+        "rotate2d" => {
+            if args.len() != 2 {
+                return Err(LuaError::UnknownFunction(name.to_string()));
+            }
+            let v = &args[0].code;
+            let angle = &args[1].code;
+            // rotate2d(v, angle) = {v.x*cos - v.y*sin, v.x*sin + v.y*cos}
+            let code = format!(
+                "(function() local c, s = math.cos({angle}), math.sin({angle}); return {{{v}[1]*c - {v}[2]*s, {v}[1]*s + {v}[2]*c}} end)()"
+            );
+            Ok(LuaExpr {
+                code,
+                typ: Type::Vec2,
+            })
+        }
+
         _ => Err(LuaError::UnknownFunction(name.to_string())),
     }
 }
