@@ -11,6 +11,20 @@ use rhizome_dew_cond::cranelift as cond;
 use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
 
+/// Dispatch a JIT function call based on parameter count.
+/// Centralizes the unsafe transmute logic for all arities 0-16.
+macro_rules! jit_call {
+    ($func_ptr:expr, $args:expr, $ret:ty, []) => {{
+        let f: extern "C" fn() -> $ret = std::mem::transmute($func_ptr);
+        f()
+    }};
+    ($func_ptr:expr, $args:expr, $ret:ty, [$($idx:tt),+]) => {{
+        let f: extern "C" fn($(jit_call!(@ty $idx)),+) -> $ret = std::mem::transmute($func_ptr);
+        f($($args[$idx]),+)
+    }};
+    (@ty $idx:tt) => { f32 };
+}
+
 // ============================================================================
 // Math function wrappers (extern "C" for Cranelift to call)
 // ============================================================================
@@ -193,38 +207,49 @@ impl CompiledFn {
 
         unsafe {
             match self.param_count {
-                0 => {
-                    let f: extern "C" fn() -> f32 = std::mem::transmute(self.func_ptr);
-                    f()
-                }
-                1 => {
-                    let f: extern "C" fn(f32) -> f32 = std::mem::transmute(self.func_ptr);
-                    f(args[0])
-                }
-                2 => {
-                    let f: extern "C" fn(f32, f32) -> f32 = std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1])
-                }
-                3 => {
-                    let f: extern "C" fn(f32, f32, f32) -> f32 = std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2])
-                }
-                4 => {
-                    let f: extern "C" fn(f32, f32, f32, f32) -> f32 =
-                        std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2], args[3])
-                }
-                5 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32) -> f32 =
-                        std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2], args[3], args[4])
-                }
-                6 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32) -> f32 =
-                        std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2], args[3], args[4], args[5])
-                }
-                _ => panic!("too many parameters (max 6)"),
+                0 => jit_call!(self.func_ptr, args, f32, []),
+                1 => jit_call!(self.func_ptr, args, f32, [0]),
+                2 => jit_call!(self.func_ptr, args, f32, [0, 1]),
+                3 => jit_call!(self.func_ptr, args, f32, [0, 1, 2]),
+                4 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3]),
+                5 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4]),
+                6 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4, 5]),
+                7 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4, 5, 6]),
+                8 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4, 5, 6, 7]),
+                9 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4, 5, 6, 7, 8]),
+                10 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+                11 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
+                12 => jit_call!(
+                    self.func_ptr,
+                    args,
+                    f32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+                ),
+                13 => jit_call!(
+                    self.func_ptr,
+                    args,
+                    f32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                ),
+                14 => jit_call!(
+                    self.func_ptr,
+                    args,
+                    f32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+                ),
+                15 => jit_call!(
+                    self.func_ptr,
+                    args,
+                    f32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+                ),
+                16 => jit_call!(
+                    self.func_ptr,
+                    args,
+                    f32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+                ),
+                _ => panic!("too many parameters (max 16)"),
             }
         }
     }

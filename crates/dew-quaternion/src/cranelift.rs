@@ -8,6 +8,34 @@
 //! - Vec3: three f32 values (x, y, z)
 //! - Quaternion: four f32 values (x, y, z, w)
 
+/// Dispatch a JIT function call based on parameter count.
+/// Centralizes the unsafe transmute logic for all arities 0-16.
+macro_rules! jit_call {
+    ($func_ptr:expr, $args:expr, $ret:ty, []) => {{
+        let f: extern "C" fn() -> $ret = std::mem::transmute($func_ptr);
+        f()
+    }};
+    ($func_ptr:expr, $args:expr, $ret:ty, [$($idx:tt),+]) => {{
+        let f: extern "C" fn($(jit_call!(@ty $idx)),+) -> $ret = std::mem::transmute($func_ptr);
+        f($($args[$idx]),+)
+    }};
+    (@ty $idx:tt) => { f32 };
+}
+
+/// Dispatch a JIT function call with an output pointer parameter.
+/// The function signature is `fn(args..., *mut f32) -> ()`.
+macro_rules! jit_call_outptr {
+    ($func_ptr:expr, $args:expr, $out_ptr:expr, []) => {{
+        let f: extern "C" fn(*mut f32) = std::mem::transmute($func_ptr);
+        f($out_ptr)
+    }};
+    ($func_ptr:expr, $args:expr, $out_ptr:expr, [$($idx:tt),+]) => {{
+        let f: extern "C" fn($(jit_call_outptr!(@ty $idx),)+ *mut f32) = std::mem::transmute($func_ptr);
+        f($($args[$idx],)+ $out_ptr)
+    }};
+    (@ty $idx:tt) => { f32 };
+}
+
 use crate::Type;
 use cranelift_codegen::ir::immediates::Offset32;
 use cranelift_codegen::ir::{
@@ -206,52 +234,49 @@ impl CompiledQuaternionFn {
 
         unsafe {
             match self.param_count {
-                0 => {
-                    let f: extern "C" fn() -> f32 = std::mem::transmute(self.func_ptr);
-                    f()
-                }
-                1 => {
-                    let f: extern "C" fn(f32) -> f32 = std::mem::transmute(self.func_ptr);
-                    f(args[0])
-                }
-                2 => {
-                    let f: extern "C" fn(f32, f32) -> f32 = std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1])
-                }
-                3 => {
-                    let f: extern "C" fn(f32, f32, f32) -> f32 = std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2])
-                }
-                4 => {
-                    let f: extern "C" fn(f32, f32, f32, f32) -> f32 =
-                        std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2], args[3])
-                }
-                5 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32) -> f32 =
-                        std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2], args[3], args[4])
-                }
-                6 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32) -> f32 =
-                        std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2], args[3], args[4], args[5])
-                }
-                7 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, f32) -> f32 =
-                        std::mem::transmute(self.func_ptr);
-                    f(
-                        args[0], args[1], args[2], args[3], args[4], args[5], args[6],
-                    )
-                }
-                8 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, f32, f32) -> f32 =
-                        std::mem::transmute(self.func_ptr);
-                    f(
-                        args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7],
-                    )
-                }
-                _ => panic!("too many parameters (max 8 for quaternion)"),
+                0 => jit_call!(self.func_ptr, args, f32, []),
+                1 => jit_call!(self.func_ptr, args, f32, [0]),
+                2 => jit_call!(self.func_ptr, args, f32, [0, 1]),
+                3 => jit_call!(self.func_ptr, args, f32, [0, 1, 2]),
+                4 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3]),
+                5 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4]),
+                6 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4, 5]),
+                7 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4, 5, 6]),
+                8 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4, 5, 6, 7]),
+                9 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4, 5, 6, 7, 8]),
+                10 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+                11 => jit_call!(self.func_ptr, args, f32, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
+                12 => jit_call!(
+                    self.func_ptr,
+                    args,
+                    f32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+                ),
+                13 => jit_call!(
+                    self.func_ptr,
+                    args,
+                    f32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                ),
+                14 => jit_call!(
+                    self.func_ptr,
+                    args,
+                    f32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+                ),
+                15 => jit_call!(
+                    self.func_ptr,
+                    args,
+                    f32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+                ),
+                16 => jit_call!(
+                    self.func_ptr,
+                    args,
+                    f32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+                ),
+                _ => panic!("too many parameters (max 16)"),
             }
         }
     }
@@ -278,56 +303,56 @@ impl CompiledVec3Fn {
 
         unsafe {
             match self.param_count {
-                0 => {
-                    let f: extern "C" fn(*mut f32) = std::mem::transmute(self.func_ptr);
-                    f(out_ptr)
+                0 => jit_call_outptr!(self.func_ptr, args, out_ptr, []),
+                1 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0]),
+                2 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1]),
+                3 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2]),
+                4 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3]),
+                5 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3, 4]),
+                6 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3, 4, 5]),
+                7 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3, 4, 5, 6]),
+                8 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3, 4, 5, 6, 7]),
+                9 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3, 4, 5, 6, 7, 8]),
+                10 => {
+                    jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
                 }
-                1 => {
-                    let f: extern "C" fn(f32, *mut f32) = std::mem::transmute(self.func_ptr);
-                    f(args[0], out_ptr)
-                }
-                2 => {
-                    let f: extern "C" fn(f32, f32, *mut f32) = std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], out_ptr)
-                }
-                3 => {
-                    let f: extern "C" fn(f32, f32, f32, *mut f32) =
-                        std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2], out_ptr)
-                }
-                4 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, *mut f32) =
-                        std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2], args[3], out_ptr)
-                }
-                5 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32, *mut f32) =
-                        std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2], args[3], args[4], out_ptr)
-                }
-                6 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, *mut f32) =
-                        std::mem::transmute(self.func_ptr);
-                    f(
-                        args[0], args[1], args[2], args[3], args[4], args[5], out_ptr,
-                    )
-                }
-                7 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, f32, *mut f32) =
-                        std::mem::transmute(self.func_ptr);
-                    f(
-                        args[0], args[1], args[2], args[3], args[4], args[5], args[6], out_ptr,
-                    )
-                }
-                8 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, f32, f32, *mut f32) =
-                        std::mem::transmute(self.func_ptr);
-                    f(
-                        args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7],
-                        out_ptr,
-                    )
-                }
-                _ => panic!("too many parameters (max 8 for quaternion)"),
+                11 => jit_call_outptr!(
+                    self.func_ptr,
+                    args,
+                    out_ptr,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                ),
+                12 => jit_call_outptr!(
+                    self.func_ptr,
+                    args,
+                    out_ptr,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+                ),
+                13 => jit_call_outptr!(
+                    self.func_ptr,
+                    args,
+                    out_ptr,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                ),
+                14 => jit_call_outptr!(
+                    self.func_ptr,
+                    args,
+                    out_ptr,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+                ),
+                15 => jit_call_outptr!(
+                    self.func_ptr,
+                    args,
+                    out_ptr,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+                ),
+                16 => jit_call_outptr!(
+                    self.func_ptr,
+                    args,
+                    out_ptr,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+                ),
+                _ => panic!("too many parameters (max 16)"),
             };
         }
         output
@@ -355,56 +380,56 @@ impl CompiledQuatFn {
 
         unsafe {
             match self.param_count {
-                0 => {
-                    let f: extern "C" fn(*mut f32) = std::mem::transmute(self.func_ptr);
-                    f(out_ptr)
+                0 => jit_call_outptr!(self.func_ptr, args, out_ptr, []),
+                1 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0]),
+                2 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1]),
+                3 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2]),
+                4 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3]),
+                5 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3, 4]),
+                6 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3, 4, 5]),
+                7 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3, 4, 5, 6]),
+                8 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3, 4, 5, 6, 7]),
+                9 => jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3, 4, 5, 6, 7, 8]),
+                10 => {
+                    jit_call_outptr!(self.func_ptr, args, out_ptr, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
                 }
-                1 => {
-                    let f: extern "C" fn(f32, *mut f32) = std::mem::transmute(self.func_ptr);
-                    f(args[0], out_ptr)
-                }
-                2 => {
-                    let f: extern "C" fn(f32, f32, *mut f32) = std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], out_ptr)
-                }
-                3 => {
-                    let f: extern "C" fn(f32, f32, f32, *mut f32) =
-                        std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2], out_ptr)
-                }
-                4 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, *mut f32) =
-                        std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2], args[3], out_ptr)
-                }
-                5 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32, *mut f32) =
-                        std::mem::transmute(self.func_ptr);
-                    f(args[0], args[1], args[2], args[3], args[4], out_ptr)
-                }
-                6 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, *mut f32) =
-                        std::mem::transmute(self.func_ptr);
-                    f(
-                        args[0], args[1], args[2], args[3], args[4], args[5], out_ptr,
-                    )
-                }
-                7 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, f32, *mut f32) =
-                        std::mem::transmute(self.func_ptr);
-                    f(
-                        args[0], args[1], args[2], args[3], args[4], args[5], args[6], out_ptr,
-                    )
-                }
-                8 => {
-                    let f: extern "C" fn(f32, f32, f32, f32, f32, f32, f32, f32, *mut f32) =
-                        std::mem::transmute(self.func_ptr);
-                    f(
-                        args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7],
-                        out_ptr,
-                    )
-                }
-                _ => panic!("too many parameters (max 8 for quaternion)"),
+                11 => jit_call_outptr!(
+                    self.func_ptr,
+                    args,
+                    out_ptr,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                ),
+                12 => jit_call_outptr!(
+                    self.func_ptr,
+                    args,
+                    out_ptr,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+                ),
+                13 => jit_call_outptr!(
+                    self.func_ptr,
+                    args,
+                    out_ptr,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                ),
+                14 => jit_call_outptr!(
+                    self.func_ptr,
+                    args,
+                    out_ptr,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+                ),
+                15 => jit_call_outptr!(
+                    self.func_ptr,
+                    args,
+                    out_ptr,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+                ),
+                16 => jit_call_outptr!(
+                    self.func_ptr,
+                    args,
+                    out_ptr,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+                ),
+                _ => panic!("too many parameters (max 16)"),
             };
         }
         output
