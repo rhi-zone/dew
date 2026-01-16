@@ -370,6 +370,10 @@ struct MathFuncs {
     sqrt: FuncRef,
     pow: FuncRef,
     atan2: FuncRef,
+    sin: FuncRef,
+    cos: FuncRef,
+    exp: FuncRef,
+    log: FuncRef,
 }
 
 // ============================================================================
@@ -427,6 +431,18 @@ impl ComplexJit {
         let atan2_id = module
             .declare_function("complex_atan2", Linkage::Import, &sig_f32_f32_f32)
             .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let sin_id = module
+            .declare_function("complex_sin", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let cos_id = module
+            .declare_function("complex_cos", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let exp_id = module
+            .declare_function("complex_exp", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let log_id = module
+            .declare_function("complex_log", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
 
         // Build function signature
         let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
@@ -455,6 +471,10 @@ impl ComplexJit {
                 sqrt: module.declare_func_in_func(sqrt_id, builder.func),
                 pow: module.declare_func_in_func(pow_id, builder.func),
                 atan2: module.declare_func_in_func(atan2_id, builder.func),
+                sin: module.declare_func_in_func(sin_id, builder.func),
+                cos: module.declare_func_in_func(cos_id, builder.func),
+                exp: module.declare_func_in_func(exp_id, builder.func),
+                log: module.declare_func_in_func(log_id, builder.func),
             };
 
             // Map variables to typed values
@@ -541,6 +561,18 @@ impl ComplexJit {
         let atan2_id = module
             .declare_function("complex_atan2", Linkage::Import, &sig_f32_f32_f32)
             .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let sin_id = module
+            .declare_function("complex_sin", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let cos_id = module
+            .declare_function("complex_cos", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let exp_id = module
+            .declare_function("complex_exp", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let log_id = module
+            .declare_function("complex_log", Linkage::Import, &sig_f32_f32)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
 
         // Build function signature - input params + output pointer, no return
         let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
@@ -571,6 +603,10 @@ impl ComplexJit {
                 sqrt: module.declare_func_in_func(sqrt_id, builder.func),
                 pow: module.declare_func_in_func(pow_id, builder.func),
                 atan2: module.declare_func_in_func(atan2_id, builder.func),
+                sin: module.declare_func_in_func(sin_id, builder.func),
+                cos: module.declare_func_in_func(cos_id, builder.func),
+                exp: module.declare_func_in_func(exp_id, builder.func),
+                log: module.declare_func_in_func(log_id, builder.func),
             };
 
             // Map variables to typed values (excluding output pointer)
@@ -879,6 +915,89 @@ fn compile_call(
             }
         }
 
+        "exp" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Scalar(v) => {
+                    let call = builder.ins().call(math.exp, &[*v]);
+                    Ok(TypedValue::Scalar(builder.inst_results(call)[0]))
+                }
+                TypedValue::Complex(c) => {
+                    // exp(a + bi) = e^a * (cos(b) + i*sin(b))
+                    let e_a_call = builder.ins().call(math.exp, &[c[0]]);
+                    let e_a = builder.inst_results(e_a_call)[0];
+                    let cos_b_call = builder.ins().call(math.cos, &[c[1]]);
+                    let cos_b = builder.inst_results(cos_b_call)[0];
+                    let sin_b_call = builder.ins().call(math.sin, &[c[1]]);
+                    let sin_b = builder.inst_results(sin_b_call)[0];
+                    let re = builder.ins().fmul(e_a, cos_b);
+                    let im = builder.ins().fmul(e_a, sin_b);
+                    Ok(TypedValue::Complex([re, im]))
+                }
+            }
+        }
+
+        "log" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Scalar(v) => {
+                    let call = builder.ins().call(math.log, &[*v]);
+                    Ok(TypedValue::Scalar(builder.inst_results(call)[0]))
+                }
+                TypedValue::Complex(c) => {
+                    // log(a + bi) = ln(|z|) + i*arg(z) = ln(sqrt(a² + b²)) + i*atan2(b, a)
+                    let a2 = builder.ins().fmul(c[0], c[0]);
+                    let b2 = builder.ins().fmul(c[1], c[1]);
+                    let sum = builder.ins().fadd(a2, b2);
+                    let r_call = builder.ins().call(math.sqrt, &[sum]);
+                    let r = builder.inst_results(r_call)[0];
+                    let ln_r_call = builder.ins().call(math.log, &[r]);
+                    let ln_r = builder.inst_results(ln_r_call)[0];
+                    let theta_call = builder.ins().call(math.atan2, &[c[1], c[0]]);
+                    let theta = builder.inst_results(theta_call)[0];
+                    Ok(TypedValue::Complex([ln_r, theta]))
+                }
+            }
+        }
+
+        "sqrt" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Scalar(v) => {
+                    let call = builder.ins().call(math.sqrt, &[*v]);
+                    Ok(TypedValue::Scalar(builder.inst_results(call)[0]))
+                }
+                TypedValue::Complex(c) => {
+                    // sqrt(z) = sqrt(r) * e^(i*θ/2)
+                    // where r = |z| = sqrt(a² + b²), θ = atan2(b, a)
+                    let a2 = builder.ins().fmul(c[0], c[0]);
+                    let b2 = builder.ins().fmul(c[1], c[1]);
+                    let sum = builder.ins().fadd(a2, b2);
+                    let r_call = builder.ins().call(math.sqrt, &[sum]);
+                    let r = builder.inst_results(r_call)[0];
+                    let sqrt_r_call = builder.ins().call(math.sqrt, &[r]);
+                    let sqrt_r = builder.inst_results(sqrt_r_call)[0];
+                    let theta_call = builder.ins().call(math.atan2, &[c[1], c[0]]);
+                    let theta = builder.inst_results(theta_call)[0];
+                    let half = builder.ins().f32const(0.5);
+                    let half_theta = builder.ins().fmul(theta, half);
+                    let cos_call = builder.ins().call(math.cos, &[half_theta]);
+                    let cos_half = builder.inst_results(cos_call)[0];
+                    let sin_call = builder.ins().call(math.sin, &[half_theta]);
+                    let sin_half = builder.inst_results(sin_call)[0];
+                    let re = builder.ins().fmul(sqrt_r, cos_half);
+                    let im = builder.ins().fmul(sqrt_r, sin_half);
+                    Ok(TypedValue::Complex([re, im]))
+                }
+            }
+        }
+
         _ => Err(CraneliftError::UnknownFunction(name.to_string())),
     }
 }
@@ -1033,5 +1152,46 @@ mod tests {
         let [re, im] = func.call(&[3.0, 4.0]);
         assert!(approx_eq(re, 3.0));
         assert!(approx_eq(im, -4.0));
+    }
+
+    #[test]
+    fn test_compile_complex_exp() {
+        // exp(0 + πi) = -1 + 0i (Euler's identity)
+        let expr = Expr::parse("exp(z)").unwrap();
+        let jit = ComplexJit::new().unwrap();
+        let func = jit
+            .compile_complex(expr.ast(), &[VarSpec::new("z", Type::Complex)])
+            .unwrap();
+        let [re, im] = func.call(&[0.0, std::f32::consts::PI]);
+        assert!(approx_eq(re, -1.0));
+        assert!(approx_eq(im, 0.0));
+    }
+
+    #[test]
+    fn test_compile_complex_log() {
+        // log(e + 0i) = 1 + 0i
+        let expr = Expr::parse("log(z)").unwrap();
+        let jit = ComplexJit::new().unwrap();
+        let func = jit
+            .compile_complex(expr.ast(), &[VarSpec::new("z", Type::Complex)])
+            .unwrap();
+        let [re, im] = func.call(&[std::f32::consts::E, 0.0]);
+        assert!(approx_eq(re, 1.0));
+        assert!(approx_eq(im, 0.0));
+    }
+
+    #[test]
+    fn test_compile_complex_sqrt() {
+        // sqrt(0 + 4i) should give sqrt(2) + sqrt(2)i
+        // Since sqrt(4i) = sqrt(4) * e^(i*π/4) = 2 * (cos(π/4) + i*sin(π/4)) = sqrt(2) + sqrt(2)i
+        let expr = Expr::parse("sqrt(z)").unwrap();
+        let jit = ComplexJit::new().unwrap();
+        let func = jit
+            .compile_complex(expr.ast(), &[VarSpec::new("z", Type::Complex)])
+            .unwrap();
+        let [re, im] = func.call(&[0.0, 4.0]);
+        let sqrt2 = std::f32::consts::SQRT_2;
+        assert!(approx_eq(re, sqrt2));
+        assert!(approx_eq(im, sqrt2));
     }
 }
