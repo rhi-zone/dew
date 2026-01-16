@@ -396,6 +396,235 @@ fn emit_function_call(name: &str, args: Vec<WgslExpr>) -> Result<WgslExpr, WgslE
             })
         }
 
+        // ====================================================================
+        // Constructors
+        // ====================================================================
+        "vec2" => {
+            if args.len() != 2 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("vec2<f32>({}, {})", args[0].code, args[1].code),
+                typ: Type::Vec2,
+            })
+        }
+
+        #[cfg(feature = "3d")]
+        "vec3" => {
+            if args.len() != 3 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!(
+                    "vec3<f32>({}, {}, {})",
+                    args[0].code, args[1].code, args[2].code
+                ),
+                typ: Type::Vec3,
+            })
+        }
+
+        #[cfg(feature = "4d")]
+        "vec4" => {
+            if args.len() != 4 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!(
+                    "vec4<f32>({}, {}, {}, {})",
+                    args[0].code, args[1].code, args[2].code, args[3].code
+                ),
+                typ: Type::Vec4,
+            })
+        }
+
+        // ====================================================================
+        // Component extraction
+        // ====================================================================
+        "x" => {
+            if args.len() != 1 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("{}.x", args[0].code),
+                typ: Type::Scalar,
+            })
+        }
+
+        "y" => {
+            if args.len() != 1 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("{}.y", args[0].code),
+                typ: Type::Scalar,
+            })
+        }
+
+        #[cfg(feature = "3d")]
+        "z" => {
+            if args.len() != 1 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("{}.z", args[0].code),
+                typ: Type::Scalar,
+            })
+        }
+
+        #[cfg(feature = "4d")]
+        "w" => {
+            if args.len() != 1 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("{}.w", args[0].code),
+                typ: Type::Scalar,
+            })
+        }
+
+        // ====================================================================
+        // Vectorized math functions
+        // ====================================================================
+        "sin" => {
+            if args.len() != 1 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("sin({})", args[0].code),
+                typ: args[0].typ,
+            })
+        }
+
+        "cos" => {
+            if args.len() != 1 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("cos({})", args[0].code),
+                typ: args[0].typ,
+            })
+        }
+
+        "abs" => {
+            if args.len() != 1 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("abs({})", args[0].code),
+                typ: args[0].typ,
+            })
+        }
+
+        "floor" => {
+            if args.len() != 1 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("floor({})", args[0].code),
+                typ: args[0].typ,
+            })
+        }
+
+        "fract" => {
+            if args.len() != 1 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("fract({})", args[0].code),
+                typ: args[0].typ,
+            })
+        }
+
+        "sqrt" => {
+            if args.len() != 1 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("sqrt({})", args[0].code),
+                typ: args[0].typ,
+            })
+        }
+
+        // ====================================================================
+        // Vectorized comparison functions
+        // ====================================================================
+        "min" => {
+            if args.len() != 2 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("min({}, {})", args[0].code, args[1].code),
+                typ: args[0].typ,
+            })
+        }
+
+        "max" => {
+            if args.len() != 2 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("max({}, {})", args[0].code, args[1].code),
+                typ: args[0].typ,
+            })
+        }
+
+        "clamp" => {
+            if args.len() != 3 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!(
+                    "clamp({}, {}, {})",
+                    args[0].code, args[1].code, args[2].code
+                ),
+                typ: args[0].typ,
+            })
+        }
+
+        // ====================================================================
+        // Interpolation functions
+        // ====================================================================
+        "step" => {
+            if args.len() != 2 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!("step({}, {})", args[0].code, args[1].code),
+                typ: args[1].typ,
+            })
+        }
+
+        "smoothstep" => {
+            if args.len() != 3 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            Ok(WgslExpr {
+                code: format!(
+                    "smoothstep({}, {}, {})",
+                    args[0].code, args[1].code, args[2].code
+                ),
+                typ: args[2].typ,
+            })
+        }
+
+        // ====================================================================
+        // Transform functions
+        // ====================================================================
+        "rotate2d" => {
+            if args.len() != 2 {
+                return Err(WgslError::UnknownFunction(name.to_string()));
+            }
+            // rotate2d(v, angle) = vec2(v.x*cos(angle) - v.y*sin(angle), v.x*sin(angle) + v.y*cos(angle))
+            let v = &args[0].code;
+            let angle = &args[1].code;
+            Ok(WgslExpr {
+                code: format!(
+                    "vec2<f32>({v}.x*cos({angle}) - {v}.y*sin({angle}), {v}.x*sin({angle}) + {v}.y*cos({angle}))"
+                ),
+                typ: Type::Vec2,
+            })
+        }
+
         _ => Err(WgslError::UnknownFunction(name.to_string())),
     }
 }

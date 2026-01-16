@@ -57,6 +57,50 @@ via passthrough.
 - [x] Runnable examples in `examples/` directory
 - [x] VitePress documentation in `docs/`
 
+## Completed - Linalg JIT Completeness
+
+### Cranelift Backend Gaps (existing functions)
+
+- [x] cross (Vec3 -> Vec3)
+- [x] normalize (VecN -> VecN)
+- [x] reflect (VecN, VecN -> VecN)
+- [x] hadamard (VecN, VecN -> VecN)
+- [x] lerp (VecN, VecN, Scalar -> VecN)
+- [x] mix (alias for lerp)
+
+### New Functions (all backends)
+
+#### Constructors
+- [x] vec2(x, y) -> Vec2
+- [x] vec3(x, y, z) -> Vec3
+- [x] vec4(x, y, z, w) -> Vec4
+
+#### Component Extraction
+- [x] x(v) -> Scalar
+- [x] y(v) -> Scalar
+- [x] z(v) -> Scalar (Vec3, Vec4 only)
+- [x] w(v) -> Scalar (Vec4 only)
+
+#### Vectorized Math
+- [x] sin(VecN) -> VecN
+- [x] cos(VecN) -> VecN
+- [x] abs(VecN) -> VecN
+- [x] floor(VecN) -> VecN
+- [x] fract(VecN) -> VecN
+- [x] sqrt(VecN) -> VecN
+
+#### Vectorized Comparison
+- [x] min(VecN, VecN) -> VecN
+- [x] max(VecN, VecN) -> VecN
+- [x] clamp(VecN, VecN, VecN) -> VecN
+
+#### Interpolation
+- [x] step(edge, x) -> VecN (edge can be scalar or VecN)
+- [x] smoothstep(edge0, edge1, x) -> VecN
+
+#### Transform
+- [x] rotate2d(Vec2, angle) -> Vec2
+
 ## Future Work
 
 ### Editor Support

@@ -41,6 +41,7 @@ macro_rules! jit_call_outptr {
 }
 
 use crate::Type;
+use cranelift_codegen::ir::condcodes::FloatCC;
 use cranelift_codegen::ir::immediates::Offset32;
 use cranelift_codegen::ir::{
     AbiParam, FuncRef, InstBuilder, MemFlags, Value as CraneliftValue, types,
@@ -105,6 +106,12 @@ extern "C" fn math_sqrt(x: f32) -> f32 {
 extern "C" fn math_pow(base: f32, exp: f32) -> f32 {
     base.powf(exp)
 }
+extern "C" fn math_sin(x: f32) -> f32 {
+    x.sin()
+}
+extern "C" fn math_cos(x: f32) -> f32 {
+    x.cos()
+}
 
 struct MathSymbol {
     name: &'static str,
@@ -120,6 +127,14 @@ fn math_symbols() -> Vec<MathSymbol> {
         MathSymbol {
             name: "linalg_pow",
             ptr: math_pow as *const u8,
+        },
+        MathSymbol {
+            name: "linalg_sin",
+            ptr: math_sin as *const u8,
+        },
+        MathSymbol {
+            name: "linalg_cos",
+            ptr: math_cos as *const u8,
         },
     ]
 }
@@ -1028,6 +1043,12 @@ impl LinalgJit {
         let pow_id = module
             .declare_function("linalg_pow", Linkage::Import, &pow_sig)
             .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let sin_id = module
+            .declare_function("linalg_sin", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let cos_id = module
+            .declare_function("linalg_cos", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
 
         // Build function signature: all params as f32, returns f32
         let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
@@ -1054,6 +1075,8 @@ impl LinalgJit {
             // Import math functions
             let sqrt_ref = module.declare_func_in_func(sqrt_id, builder.func);
             let pow_ref = module.declare_func_in_func(pow_id, builder.func);
+            let sin_ref = module.declare_func_in_func(sin_id, builder.func);
+            let cos_ref = module.declare_func_in_func(cos_id, builder.func);
 
             // Map variables to typed values
             let block_params = builder.block_params(entry_block).to_vec();
@@ -1152,6 +1175,8 @@ impl LinalgJit {
             let math_funcs = MathFuncs {
                 sqrt: sqrt_ref,
                 pow: pow_ref,
+                sin: sin_ref,
+                cos: cos_ref,
             };
             let result = compile_ast(ast, &mut builder, &var_map, &math_funcs)?;
 
@@ -1209,6 +1234,12 @@ impl LinalgJit {
         let pow_id = module
             .declare_function("linalg_pow", Linkage::Import, &pow_sig)
             .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let sin_id = module
+            .declare_function("linalg_sin", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let cos_id = module
+            .declare_function("linalg_cos", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
 
         let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
         let ptr_type = module.target_config().pointer_type();
@@ -1234,6 +1265,8 @@ impl LinalgJit {
 
             let sqrt_ref = module.declare_func_in_func(sqrt_id, builder.func);
             let pow_ref = module.declare_func_in_func(pow_id, builder.func);
+            let sin_ref = module.declare_func_in_func(sin_id, builder.func);
+            let cos_ref = module.declare_func_in_func(cos_id, builder.func);
 
             let block_params = builder.block_params(entry_block).to_vec();
             let out_ptr = block_params[total_params];
@@ -1332,6 +1365,8 @@ impl LinalgJit {
             let math_funcs = MathFuncs {
                 sqrt: sqrt_ref,
                 pow: pow_ref,
+                sin: sin_ref,
+                cos: cos_ref,
             };
             let result = compile_ast(ast, &mut builder, &var_map, &math_funcs)?;
 
@@ -1397,6 +1432,12 @@ impl LinalgJit {
         let pow_id = module
             .declare_function("linalg_pow", Linkage::Import, &pow_sig)
             .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let sin_id = module
+            .declare_function("linalg_sin", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let cos_id = module
+            .declare_function("linalg_cos", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
 
         let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
         let ptr_type = module.target_config().pointer_type();
@@ -1422,6 +1463,8 @@ impl LinalgJit {
 
             let sqrt_ref = module.declare_func_in_func(sqrt_id, builder.func);
             let pow_ref = module.declare_func_in_func(pow_id, builder.func);
+            let sin_ref = module.declare_func_in_func(sin_id, builder.func);
+            let cos_ref = module.declare_func_in_func(cos_id, builder.func);
 
             let block_params = builder.block_params(entry_block).to_vec();
             let out_ptr = block_params[total_params];
@@ -1518,6 +1561,8 @@ impl LinalgJit {
             let math_funcs = MathFuncs {
                 sqrt: sqrt_ref,
                 pow: pow_ref,
+                sin: sin_ref,
+                cos: cos_ref,
             };
             let result = compile_ast(ast, &mut builder, &var_map, &math_funcs)?;
 
@@ -1585,6 +1630,12 @@ impl LinalgJit {
         let pow_id = module
             .declare_function("linalg_pow", Linkage::Import, &pow_sig)
             .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let sin_id = module
+            .declare_function("linalg_sin", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let cos_id = module
+            .declare_function("linalg_cos", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
 
         let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
         let ptr_type = module.target_config().pointer_type();
@@ -1610,6 +1661,8 @@ impl LinalgJit {
 
             let sqrt_ref = module.declare_func_in_func(sqrt_id, builder.func);
             let pow_ref = module.declare_func_in_func(pow_id, builder.func);
+            let sin_ref = module.declare_func_in_func(sin_id, builder.func);
+            let cos_ref = module.declare_func_in_func(cos_id, builder.func);
 
             let block_params = builder.block_params(entry_block).to_vec();
             let out_ptr = block_params[total_params];
@@ -1704,6 +1757,8 @@ impl LinalgJit {
             let math_funcs = MathFuncs {
                 sqrt: sqrt_ref,
                 pow: pow_ref,
+                sin: sin_ref,
+                cos: cos_ref,
             };
             let result = compile_ast(ast, &mut builder, &var_map, &math_funcs)?;
 
@@ -1774,6 +1829,12 @@ impl LinalgJit {
         let pow_id = module
             .declare_function("linalg_pow", Linkage::Import, &pow_sig)
             .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let sin_id = module
+            .declare_function("linalg_sin", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let cos_id = module
+            .declare_function("linalg_cos", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
 
         let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
         let ptr_type = module.target_config().pointer_type();
@@ -1799,6 +1860,8 @@ impl LinalgJit {
 
             let sqrt_ref = module.declare_func_in_func(sqrt_id, builder.func);
             let pow_ref = module.declare_func_in_func(pow_id, builder.func);
+            let sin_ref = module.declare_func_in_func(sin_id, builder.func);
+            let cos_ref = module.declare_func_in_func(cos_id, builder.func);
 
             let block_params = builder.block_params(entry_block).to_vec();
             let out_ptr = block_params[total_params];
@@ -1897,6 +1960,8 @@ impl LinalgJit {
             let math_funcs = MathFuncs {
                 sqrt: sqrt_ref,
                 pow: pow_ref,
+                sin: sin_ref,
+                cos: cos_ref,
             };
             let result = compile_ast(ast, &mut builder, &var_map, &math_funcs)?;
 
@@ -1964,6 +2029,12 @@ impl LinalgJit {
         let pow_id = module
             .declare_function("linalg_pow", Linkage::Import, &pow_sig)
             .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let sin_id = module
+            .declare_function("linalg_sin", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let cos_id = module
+            .declare_function("linalg_cos", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
 
         let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
         let ptr_type = module.target_config().pointer_type();
@@ -1989,6 +2060,8 @@ impl LinalgJit {
 
             let sqrt_ref = module.declare_func_in_func(sqrt_id, builder.func);
             let pow_ref = module.declare_func_in_func(pow_id, builder.func);
+            let sin_ref = module.declare_func_in_func(sin_id, builder.func);
+            let cos_ref = module.declare_func_in_func(cos_id, builder.func);
 
             let block_params = builder.block_params(entry_block).to_vec();
             let out_ptr = block_params[total_params];
@@ -2085,6 +2158,8 @@ impl LinalgJit {
             let math_funcs = MathFuncs {
                 sqrt: sqrt_ref,
                 pow: pow_ref,
+                sin: sin_ref,
+                cos: cos_ref,
             };
             let result = compile_ast(ast, &mut builder, &var_map, &math_funcs)?;
 
@@ -2151,6 +2226,12 @@ impl LinalgJit {
         let pow_id = module
             .declare_function("linalg_pow", Linkage::Import, &pow_sig)
             .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let sin_id = module
+            .declare_function("linalg_sin", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
+        let cos_id = module
+            .declare_function("linalg_cos", Linkage::Import, &sqrt_sig)
+            .map_err(|e| CraneliftError::JitError(e.to_string()))?;
 
         let total_params: usize = vars.iter().map(|v| v.param_count()).sum();
         let ptr_type = module.target_config().pointer_type();
@@ -2176,6 +2257,8 @@ impl LinalgJit {
 
             let sqrt_ref = module.declare_func_in_func(sqrt_id, builder.func);
             let pow_ref = module.declare_func_in_func(pow_id, builder.func);
+            let sin_ref = module.declare_func_in_func(sin_id, builder.func);
+            let cos_ref = module.declare_func_in_func(cos_id, builder.func);
 
             let block_params = builder.block_params(entry_block).to_vec();
             let out_ptr = block_params[total_params];
@@ -2270,6 +2353,8 @@ impl LinalgJit {
             let math_funcs = MathFuncs {
                 sqrt: sqrt_ref,
                 pow: pow_ref,
+                sin: sin_ref,
+                cos: cos_ref,
             };
             let result = compile_ast(ast, &mut builder, &var_map, &math_funcs)?;
 
@@ -2310,6 +2395,8 @@ impl LinalgJit {
 struct MathFuncs {
     sqrt: FuncRef,
     pow: FuncRef,
+    sin: FuncRef,
+    cos: FuncRef,
 }
 
 fn compile_ast(
@@ -3041,6 +3128,765 @@ fn compile_call(
             }
         }
 
+        #[cfg(feature = "3d")]
+        "cross" => {
+            if args.len() != 2 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match (&args[0], &args[1]) {
+                (TypedValue::Vec3(a), TypedValue::Vec3(b)) => {
+                    // cross(a, b) = (a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x)
+                    let ay_bz = builder.ins().fmul(a[1], b[2]);
+                    let az_by = builder.ins().fmul(a[2], b[1]);
+                    let x = builder.ins().fsub(ay_bz, az_by);
+
+                    let az_bx = builder.ins().fmul(a[2], b[0]);
+                    let ax_bz = builder.ins().fmul(a[0], b[2]);
+                    let y = builder.ins().fsub(az_bx, ax_bz);
+
+                    let ax_by = builder.ins().fmul(a[0], b[1]);
+                    let ay_bx = builder.ins().fmul(a[1], b[0]);
+                    let z = builder.ins().fsub(ax_by, ay_bx);
+
+                    Ok(TypedValue::Vec3([x, y, z]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "normalize" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Vec2(v) => {
+                    let x2 = builder.ins().fmul(v[0], v[0]);
+                    let y2 = builder.ins().fmul(v[1], v[1]);
+                    let sum = builder.ins().fadd(x2, y2);
+                    let call = builder.ins().call(math.sqrt, &[sum]);
+                    let len = builder.inst_results(call)[0];
+                    Ok(TypedValue::Vec2([
+                        builder.ins().fdiv(v[0], len),
+                        builder.ins().fdiv(v[1], len),
+                    ]))
+                }
+                #[cfg(feature = "3d")]
+                TypedValue::Vec3(v) => {
+                    let x2 = builder.ins().fmul(v[0], v[0]);
+                    let y2 = builder.ins().fmul(v[1], v[1]);
+                    let z2 = builder.ins().fmul(v[2], v[2]);
+                    let xy = builder.ins().fadd(x2, y2);
+                    let sum = builder.ins().fadd(xy, z2);
+                    let call = builder.ins().call(math.sqrt, &[sum]);
+                    let len = builder.inst_results(call)[0];
+                    Ok(TypedValue::Vec3([
+                        builder.ins().fdiv(v[0], len),
+                        builder.ins().fdiv(v[1], len),
+                        builder.ins().fdiv(v[2], len),
+                    ]))
+                }
+                #[cfg(feature = "4d")]
+                TypedValue::Vec4(v) => {
+                    let x2 = builder.ins().fmul(v[0], v[0]);
+                    let y2 = builder.ins().fmul(v[1], v[1]);
+                    let z2 = builder.ins().fmul(v[2], v[2]);
+                    let w2 = builder.ins().fmul(v[3], v[3]);
+                    let xy = builder.ins().fadd(x2, y2);
+                    let zw = builder.ins().fadd(z2, w2);
+                    let sum = builder.ins().fadd(xy, zw);
+                    let call = builder.ins().call(math.sqrt, &[sum]);
+                    let len = builder.inst_results(call)[0];
+                    Ok(TypedValue::Vec4([
+                        builder.ins().fdiv(v[0], len),
+                        builder.ins().fdiv(v[1], len),
+                        builder.ins().fdiv(v[2], len),
+                        builder.ins().fdiv(v[3], len),
+                    ]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "reflect" => {
+            if args.len() != 2 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            // reflect(i, n) = i - 2 * dot(n, i) * n
+            match (&args[0], &args[1]) {
+                (TypedValue::Vec2(i), TypedValue::Vec2(n)) => {
+                    let nx_ix = builder.ins().fmul(n[0], i[0]);
+                    let ny_iy = builder.ins().fmul(n[1], i[1]);
+                    let dot = builder.ins().fadd(nx_ix, ny_iy);
+                    let two = builder.ins().f32const(2.0);
+                    let factor = builder.ins().fmul(two, dot);
+                    let fn0 = builder.ins().fmul(factor, n[0]);
+                    let fn1 = builder.ins().fmul(factor, n[1]);
+                    let rx = builder.ins().fsub(i[0], fn0);
+                    let ry = builder.ins().fsub(i[1], fn1);
+                    Ok(TypedValue::Vec2([rx, ry]))
+                }
+                #[cfg(feature = "3d")]
+                (TypedValue::Vec3(i), TypedValue::Vec3(n)) => {
+                    let nx_ix = builder.ins().fmul(n[0], i[0]);
+                    let ny_iy = builder.ins().fmul(n[1], i[1]);
+                    let nz_iz = builder.ins().fmul(n[2], i[2]);
+                    let dot_xy = builder.ins().fadd(nx_ix, ny_iy);
+                    let dot = builder.ins().fadd(dot_xy, nz_iz);
+                    let two = builder.ins().f32const(2.0);
+                    let factor = builder.ins().fmul(two, dot);
+                    let fn0 = builder.ins().fmul(factor, n[0]);
+                    let fn1 = builder.ins().fmul(factor, n[1]);
+                    let fn2 = builder.ins().fmul(factor, n[2]);
+                    let rx = builder.ins().fsub(i[0], fn0);
+                    let ry = builder.ins().fsub(i[1], fn1);
+                    let rz = builder.ins().fsub(i[2], fn2);
+                    Ok(TypedValue::Vec3([rx, ry, rz]))
+                }
+                #[cfg(feature = "4d")]
+                (TypedValue::Vec4(i), TypedValue::Vec4(n)) => {
+                    let nx_ix = builder.ins().fmul(n[0], i[0]);
+                    let ny_iy = builder.ins().fmul(n[1], i[1]);
+                    let nz_iz = builder.ins().fmul(n[2], i[2]);
+                    let nw_iw = builder.ins().fmul(n[3], i[3]);
+                    let dot_xy = builder.ins().fadd(nx_ix, ny_iy);
+                    let dot_zw = builder.ins().fadd(nz_iz, nw_iw);
+                    let dot = builder.ins().fadd(dot_xy, dot_zw);
+                    let two = builder.ins().f32const(2.0);
+                    let factor = builder.ins().fmul(two, dot);
+                    let fn0 = builder.ins().fmul(factor, n[0]);
+                    let fn1 = builder.ins().fmul(factor, n[1]);
+                    let fn2 = builder.ins().fmul(factor, n[2]);
+                    let fn3 = builder.ins().fmul(factor, n[3]);
+                    let rx = builder.ins().fsub(i[0], fn0);
+                    let ry = builder.ins().fsub(i[1], fn1);
+                    let rz = builder.ins().fsub(i[2], fn2);
+                    let rw = builder.ins().fsub(i[3], fn3);
+                    Ok(TypedValue::Vec4([rx, ry, rz, rw]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "hadamard" => {
+            if args.len() != 2 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match (&args[0], &args[1]) {
+                (TypedValue::Vec2(a), TypedValue::Vec2(b)) => Ok(TypedValue::Vec2([
+                    builder.ins().fmul(a[0], b[0]),
+                    builder.ins().fmul(a[1], b[1]),
+                ])),
+                #[cfg(feature = "3d")]
+                (TypedValue::Vec3(a), TypedValue::Vec3(b)) => Ok(TypedValue::Vec3([
+                    builder.ins().fmul(a[0], b[0]),
+                    builder.ins().fmul(a[1], b[1]),
+                    builder.ins().fmul(a[2], b[2]),
+                ])),
+                #[cfg(feature = "4d")]
+                (TypedValue::Vec4(a), TypedValue::Vec4(b)) => Ok(TypedValue::Vec4([
+                    builder.ins().fmul(a[0], b[0]),
+                    builder.ins().fmul(a[1], b[1]),
+                    builder.ins().fmul(a[2], b[2]),
+                    builder.ins().fmul(a[3], b[3]),
+                ])),
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "lerp" | "mix" => {
+            if args.len() != 3 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            // lerp(a, b, t) = a + (b - a) * t
+            match (&args[0], &args[1], &args[2]) {
+                (TypedValue::Vec2(a), TypedValue::Vec2(b), TypedValue::Scalar(t)) => {
+                    let dx = builder.ins().fsub(b[0], a[0]);
+                    let dy = builder.ins().fsub(b[1], a[1]);
+                    let dx_t = builder.ins().fmul(dx, *t);
+                    let dy_t = builder.ins().fmul(dy, *t);
+                    let rx = builder.ins().fadd(a[0], dx_t);
+                    let ry = builder.ins().fadd(a[1], dy_t);
+                    Ok(TypedValue::Vec2([rx, ry]))
+                }
+                #[cfg(feature = "3d")]
+                (TypedValue::Vec3(a), TypedValue::Vec3(b), TypedValue::Scalar(t)) => {
+                    let dx = builder.ins().fsub(b[0], a[0]);
+                    let dy = builder.ins().fsub(b[1], a[1]);
+                    let dz = builder.ins().fsub(b[2], a[2]);
+                    let dx_t = builder.ins().fmul(dx, *t);
+                    let dy_t = builder.ins().fmul(dy, *t);
+                    let dz_t = builder.ins().fmul(dz, *t);
+                    let rx = builder.ins().fadd(a[0], dx_t);
+                    let ry = builder.ins().fadd(a[1], dy_t);
+                    let rz = builder.ins().fadd(a[2], dz_t);
+                    Ok(TypedValue::Vec3([rx, ry, rz]))
+                }
+                #[cfg(feature = "4d")]
+                (TypedValue::Vec4(a), TypedValue::Vec4(b), TypedValue::Scalar(t)) => {
+                    let dx = builder.ins().fsub(b[0], a[0]);
+                    let dy = builder.ins().fsub(b[1], a[1]);
+                    let dz = builder.ins().fsub(b[2], a[2]);
+                    let dw = builder.ins().fsub(b[3], a[3]);
+                    let dx_t = builder.ins().fmul(dx, *t);
+                    let dy_t = builder.ins().fmul(dy, *t);
+                    let dz_t = builder.ins().fmul(dz, *t);
+                    let dw_t = builder.ins().fmul(dw, *t);
+                    let rx = builder.ins().fadd(a[0], dx_t);
+                    let ry = builder.ins().fadd(a[1], dy_t);
+                    let rz = builder.ins().fadd(a[2], dz_t);
+                    let rw = builder.ins().fadd(a[3], dw_t);
+                    Ok(TypedValue::Vec4([rx, ry, rz, rw]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        // ====================================================================
+        // Constructors
+        // ====================================================================
+        "vec2" => {
+            if args.len() != 2 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match (&args[0], &args[1]) {
+                (TypedValue::Scalar(x), TypedValue::Scalar(y)) => Ok(TypedValue::Vec2([*x, *y])),
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        #[cfg(feature = "3d")]
+        "vec3" => {
+            if args.len() != 3 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match (&args[0], &args[1], &args[2]) {
+                (TypedValue::Scalar(x), TypedValue::Scalar(y), TypedValue::Scalar(z)) => {
+                    Ok(TypedValue::Vec3([*x, *y, *z]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        #[cfg(feature = "4d")]
+        "vec4" => {
+            if args.len() != 4 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match (&args[0], &args[1], &args[2], &args[3]) {
+                (
+                    TypedValue::Scalar(x),
+                    TypedValue::Scalar(y),
+                    TypedValue::Scalar(z),
+                    TypedValue::Scalar(w),
+                ) => Ok(TypedValue::Vec4([*x, *y, *z, *w])),
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        // ====================================================================
+        // Component extraction
+        // ====================================================================
+        "x" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Vec2(v) => Ok(TypedValue::Scalar(v[0])),
+                #[cfg(feature = "3d")]
+                TypedValue::Vec3(v) => Ok(TypedValue::Scalar(v[0])),
+                #[cfg(feature = "4d")]
+                TypedValue::Vec4(v) => Ok(TypedValue::Scalar(v[0])),
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "y" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Vec2(v) => Ok(TypedValue::Scalar(v[1])),
+                #[cfg(feature = "3d")]
+                TypedValue::Vec3(v) => Ok(TypedValue::Scalar(v[1])),
+                #[cfg(feature = "4d")]
+                TypedValue::Vec4(v) => Ok(TypedValue::Scalar(v[1])),
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        #[cfg(feature = "3d")]
+        "z" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Vec3(v) => Ok(TypedValue::Scalar(v[2])),
+                #[cfg(feature = "4d")]
+                TypedValue::Vec4(v) => Ok(TypedValue::Scalar(v[2])),
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        #[cfg(feature = "4d")]
+        "w" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Vec4(v) => Ok(TypedValue::Scalar(v[3])),
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        // ====================================================================
+        // Vectorized math functions
+        // ====================================================================
+        "sin" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Vec2(v) => {
+                    let c0 = builder.ins().call(math.sin, &[v[0]]);
+                    let c1 = builder.ins().call(math.sin, &[v[1]]);
+                    Ok(TypedValue::Vec2([
+                        builder.inst_results(c0)[0],
+                        builder.inst_results(c1)[0],
+                    ]))
+                }
+                #[cfg(feature = "3d")]
+                TypedValue::Vec3(v) => {
+                    let c0 = builder.ins().call(math.sin, &[v[0]]);
+                    let c1 = builder.ins().call(math.sin, &[v[1]]);
+                    let c2 = builder.ins().call(math.sin, &[v[2]]);
+                    Ok(TypedValue::Vec3([
+                        builder.inst_results(c0)[0],
+                        builder.inst_results(c1)[0],
+                        builder.inst_results(c2)[0],
+                    ]))
+                }
+                #[cfg(feature = "4d")]
+                TypedValue::Vec4(v) => {
+                    let c0 = builder.ins().call(math.sin, &[v[0]]);
+                    let c1 = builder.ins().call(math.sin, &[v[1]]);
+                    let c2 = builder.ins().call(math.sin, &[v[2]]);
+                    let c3 = builder.ins().call(math.sin, &[v[3]]);
+                    Ok(TypedValue::Vec4([
+                        builder.inst_results(c0)[0],
+                        builder.inst_results(c1)[0],
+                        builder.inst_results(c2)[0],
+                        builder.inst_results(c3)[0],
+                    ]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "cos" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Vec2(v) => {
+                    let c0 = builder.ins().call(math.cos, &[v[0]]);
+                    let c1 = builder.ins().call(math.cos, &[v[1]]);
+                    Ok(TypedValue::Vec2([
+                        builder.inst_results(c0)[0],
+                        builder.inst_results(c1)[0],
+                    ]))
+                }
+                #[cfg(feature = "3d")]
+                TypedValue::Vec3(v) => {
+                    let c0 = builder.ins().call(math.cos, &[v[0]]);
+                    let c1 = builder.ins().call(math.cos, &[v[1]]);
+                    let c2 = builder.ins().call(math.cos, &[v[2]]);
+                    Ok(TypedValue::Vec3([
+                        builder.inst_results(c0)[0],
+                        builder.inst_results(c1)[0],
+                        builder.inst_results(c2)[0],
+                    ]))
+                }
+                #[cfg(feature = "4d")]
+                TypedValue::Vec4(v) => {
+                    let c0 = builder.ins().call(math.cos, &[v[0]]);
+                    let c1 = builder.ins().call(math.cos, &[v[1]]);
+                    let c2 = builder.ins().call(math.cos, &[v[2]]);
+                    let c3 = builder.ins().call(math.cos, &[v[3]]);
+                    Ok(TypedValue::Vec4([
+                        builder.inst_results(c0)[0],
+                        builder.inst_results(c1)[0],
+                        builder.inst_results(c2)[0],
+                        builder.inst_results(c3)[0],
+                    ]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "abs" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Vec2(v) => Ok(TypedValue::Vec2([
+                    builder.ins().fabs(v[0]),
+                    builder.ins().fabs(v[1]),
+                ])),
+                #[cfg(feature = "3d")]
+                TypedValue::Vec3(v) => Ok(TypedValue::Vec3([
+                    builder.ins().fabs(v[0]),
+                    builder.ins().fabs(v[1]),
+                    builder.ins().fabs(v[2]),
+                ])),
+                #[cfg(feature = "4d")]
+                TypedValue::Vec4(v) => Ok(TypedValue::Vec4([
+                    builder.ins().fabs(v[0]),
+                    builder.ins().fabs(v[1]),
+                    builder.ins().fabs(v[2]),
+                    builder.ins().fabs(v[3]),
+                ])),
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "floor" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Vec2(v) => Ok(TypedValue::Vec2([
+                    builder.ins().floor(v[0]),
+                    builder.ins().floor(v[1]),
+                ])),
+                #[cfg(feature = "3d")]
+                TypedValue::Vec3(v) => Ok(TypedValue::Vec3([
+                    builder.ins().floor(v[0]),
+                    builder.ins().floor(v[1]),
+                    builder.ins().floor(v[2]),
+                ])),
+                #[cfg(feature = "4d")]
+                TypedValue::Vec4(v) => Ok(TypedValue::Vec4([
+                    builder.ins().floor(v[0]),
+                    builder.ins().floor(v[1]),
+                    builder.ins().floor(v[2]),
+                    builder.ins().floor(v[3]),
+                ])),
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "fract" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            // fract(x) = x - floor(x)
+            match &args[0] {
+                TypedValue::Vec2(v) => {
+                    let f0 = builder.ins().floor(v[0]);
+                    let f1 = builder.ins().floor(v[1]);
+                    Ok(TypedValue::Vec2([
+                        builder.ins().fsub(v[0], f0),
+                        builder.ins().fsub(v[1], f1),
+                    ]))
+                }
+                #[cfg(feature = "3d")]
+                TypedValue::Vec3(v) => {
+                    let f0 = builder.ins().floor(v[0]);
+                    let f1 = builder.ins().floor(v[1]);
+                    let f2 = builder.ins().floor(v[2]);
+                    Ok(TypedValue::Vec3([
+                        builder.ins().fsub(v[0], f0),
+                        builder.ins().fsub(v[1], f1),
+                        builder.ins().fsub(v[2], f2),
+                    ]))
+                }
+                #[cfg(feature = "4d")]
+                TypedValue::Vec4(v) => {
+                    let f0 = builder.ins().floor(v[0]);
+                    let f1 = builder.ins().floor(v[1]);
+                    let f2 = builder.ins().floor(v[2]);
+                    let f3 = builder.ins().floor(v[3]);
+                    Ok(TypedValue::Vec4([
+                        builder.ins().fsub(v[0], f0),
+                        builder.ins().fsub(v[1], f1),
+                        builder.ins().fsub(v[2], f2),
+                        builder.ins().fsub(v[3], f3),
+                    ]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "sqrt" => {
+            if args.len() != 1 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match &args[0] {
+                TypedValue::Vec2(v) => {
+                    let c0 = builder.ins().call(math.sqrt, &[v[0]]);
+                    let c1 = builder.ins().call(math.sqrt, &[v[1]]);
+                    Ok(TypedValue::Vec2([
+                        builder.inst_results(c0)[0],
+                        builder.inst_results(c1)[0],
+                    ]))
+                }
+                #[cfg(feature = "3d")]
+                TypedValue::Vec3(v) => {
+                    let c0 = builder.ins().call(math.sqrt, &[v[0]]);
+                    let c1 = builder.ins().call(math.sqrt, &[v[1]]);
+                    let c2 = builder.ins().call(math.sqrt, &[v[2]]);
+                    Ok(TypedValue::Vec3([
+                        builder.inst_results(c0)[0],
+                        builder.inst_results(c1)[0],
+                        builder.inst_results(c2)[0],
+                    ]))
+                }
+                #[cfg(feature = "4d")]
+                TypedValue::Vec4(v) => {
+                    let c0 = builder.ins().call(math.sqrt, &[v[0]]);
+                    let c1 = builder.ins().call(math.sqrt, &[v[1]]);
+                    let c2 = builder.ins().call(math.sqrt, &[v[2]]);
+                    let c3 = builder.ins().call(math.sqrt, &[v[3]]);
+                    Ok(TypedValue::Vec4([
+                        builder.inst_results(c0)[0],
+                        builder.inst_results(c1)[0],
+                        builder.inst_results(c2)[0],
+                        builder.inst_results(c3)[0],
+                    ]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        // ====================================================================
+        // Vectorized comparison functions
+        // ====================================================================
+        "min" => {
+            if args.len() != 2 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match (&args[0], &args[1]) {
+                (TypedValue::Vec2(a), TypedValue::Vec2(b)) => Ok(TypedValue::Vec2([
+                    builder.ins().fmin(a[0], b[0]),
+                    builder.ins().fmin(a[1], b[1]),
+                ])),
+                #[cfg(feature = "3d")]
+                (TypedValue::Vec3(a), TypedValue::Vec3(b)) => Ok(TypedValue::Vec3([
+                    builder.ins().fmin(a[0], b[0]),
+                    builder.ins().fmin(a[1], b[1]),
+                    builder.ins().fmin(a[2], b[2]),
+                ])),
+                #[cfg(feature = "4d")]
+                (TypedValue::Vec4(a), TypedValue::Vec4(b)) => Ok(TypedValue::Vec4([
+                    builder.ins().fmin(a[0], b[0]),
+                    builder.ins().fmin(a[1], b[1]),
+                    builder.ins().fmin(a[2], b[2]),
+                    builder.ins().fmin(a[3], b[3]),
+                ])),
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "max" => {
+            if args.len() != 2 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            match (&args[0], &args[1]) {
+                (TypedValue::Vec2(a), TypedValue::Vec2(b)) => Ok(TypedValue::Vec2([
+                    builder.ins().fmax(a[0], b[0]),
+                    builder.ins().fmax(a[1], b[1]),
+                ])),
+                #[cfg(feature = "3d")]
+                (TypedValue::Vec3(a), TypedValue::Vec3(b)) => Ok(TypedValue::Vec3([
+                    builder.ins().fmax(a[0], b[0]),
+                    builder.ins().fmax(a[1], b[1]),
+                    builder.ins().fmax(a[2], b[2]),
+                ])),
+                #[cfg(feature = "4d")]
+                (TypedValue::Vec4(a), TypedValue::Vec4(b)) => Ok(TypedValue::Vec4([
+                    builder.ins().fmax(a[0], b[0]),
+                    builder.ins().fmax(a[1], b[1]),
+                    builder.ins().fmax(a[2], b[2]),
+                    builder.ins().fmax(a[3], b[3]),
+                ])),
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "clamp" => {
+            if args.len() != 3 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            // clamp(x, lo, hi) = min(max(x, lo), hi)
+            match (&args[0], &args[1], &args[2]) {
+                (TypedValue::Vec2(x), TypedValue::Vec2(lo), TypedValue::Vec2(hi)) => {
+                    let m0 = builder.ins().fmax(x[0], lo[0]);
+                    let m1 = builder.ins().fmax(x[1], lo[1]);
+                    Ok(TypedValue::Vec2([
+                        builder.ins().fmin(m0, hi[0]),
+                        builder.ins().fmin(m1, hi[1]),
+                    ]))
+                }
+                #[cfg(feature = "3d")]
+                (TypedValue::Vec3(x), TypedValue::Vec3(lo), TypedValue::Vec3(hi)) => {
+                    let m0 = builder.ins().fmax(x[0], lo[0]);
+                    let m1 = builder.ins().fmax(x[1], lo[1]);
+                    let m2 = builder.ins().fmax(x[2], lo[2]);
+                    Ok(TypedValue::Vec3([
+                        builder.ins().fmin(m0, hi[0]),
+                        builder.ins().fmin(m1, hi[1]),
+                        builder.ins().fmin(m2, hi[2]),
+                    ]))
+                }
+                #[cfg(feature = "4d")]
+                (TypedValue::Vec4(x), TypedValue::Vec4(lo), TypedValue::Vec4(hi)) => {
+                    let m0 = builder.ins().fmax(x[0], lo[0]);
+                    let m1 = builder.ins().fmax(x[1], lo[1]);
+                    let m2 = builder.ins().fmax(x[2], lo[2]);
+                    let m3 = builder.ins().fmax(x[3], lo[3]);
+                    Ok(TypedValue::Vec4([
+                        builder.ins().fmin(m0, hi[0]),
+                        builder.ins().fmin(m1, hi[1]),
+                        builder.ins().fmin(m2, hi[2]),
+                        builder.ins().fmin(m3, hi[3]),
+                    ]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        // ====================================================================
+        // Interpolation functions
+        // ====================================================================
+        "step" => {
+            if args.len() != 2 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            // step(edge, x) = x < edge ? 0.0 : 1.0
+            let zero = builder.ins().f32const(0.0);
+            let one = builder.ins().f32const(1.0);
+            match (&args[0], &args[1]) {
+                (TypedValue::Vec2(edge), TypedValue::Vec2(x)) => {
+                    let c0 = builder.ins().fcmp(FloatCC::LessThan, x[0], edge[0]);
+                    let c1 = builder.ins().fcmp(FloatCC::LessThan, x[1], edge[1]);
+                    Ok(TypedValue::Vec2([
+                        builder.ins().select(c0, zero, one),
+                        builder.ins().select(c1, zero, one),
+                    ]))
+                }
+                #[cfg(feature = "3d")]
+                (TypedValue::Vec3(edge), TypedValue::Vec3(x)) => {
+                    let c0 = builder.ins().fcmp(FloatCC::LessThan, x[0], edge[0]);
+                    let c1 = builder.ins().fcmp(FloatCC::LessThan, x[1], edge[1]);
+                    let c2 = builder.ins().fcmp(FloatCC::LessThan, x[2], edge[2]);
+                    Ok(TypedValue::Vec3([
+                        builder.ins().select(c0, zero, one),
+                        builder.ins().select(c1, zero, one),
+                        builder.ins().select(c2, zero, one),
+                    ]))
+                }
+                #[cfg(feature = "4d")]
+                (TypedValue::Vec4(edge), TypedValue::Vec4(x)) => {
+                    let c0 = builder.ins().fcmp(FloatCC::LessThan, x[0], edge[0]);
+                    let c1 = builder.ins().fcmp(FloatCC::LessThan, x[1], edge[1]);
+                    let c2 = builder.ins().fcmp(FloatCC::LessThan, x[2], edge[2]);
+                    let c3 = builder.ins().fcmp(FloatCC::LessThan, x[3], edge[3]);
+                    Ok(TypedValue::Vec4([
+                        builder.ins().select(c0, zero, one),
+                        builder.ins().select(c1, zero, one),
+                        builder.ins().select(c2, zero, one),
+                        builder.ins().select(c3, zero, one),
+                    ]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        "smoothstep" => {
+            if args.len() != 3 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            // smoothstep(edge0, edge1, x) = t*t*(3-2*t) where t = clamp((x-edge0)/(edge1-edge0), 0, 1)
+            let zero = builder.ins().f32const(0.0);
+            let one = builder.ins().f32const(1.0);
+            let two = builder.ins().f32const(2.0);
+            let three = builder.ins().f32const(3.0);
+
+            fn compute_smoothstep(
+                builder: &mut FunctionBuilder,
+                e0: cranelift_codegen::ir::Value,
+                e1: cranelift_codegen::ir::Value,
+                x: cranelift_codegen::ir::Value,
+                zero: cranelift_codegen::ir::Value,
+                one: cranelift_codegen::ir::Value,
+                two: cranelift_codegen::ir::Value,
+                three: cranelift_codegen::ir::Value,
+            ) -> cranelift_codegen::ir::Value {
+                // t = (x - e0) / (e1 - e0)
+                let diff = builder.ins().fsub(x, e0);
+                let range = builder.ins().fsub(e1, e0);
+                let t_raw = builder.ins().fdiv(diff, range);
+                // clamp t to [0, 1]
+                let t_min = builder.ins().fmax(t_raw, zero);
+                let t = builder.ins().fmin(t_min, one);
+                // t * t * (3 - 2*t)
+                let t2 = builder.ins().fmul(t, t);
+                let two_t = builder.ins().fmul(two, t);
+                let sub = builder.ins().fsub(three, two_t);
+                builder.ins().fmul(t2, sub)
+            }
+
+            match (&args[0], &args[1], &args[2]) {
+                (TypedValue::Vec2(e0), TypedValue::Vec2(e1), TypedValue::Vec2(x)) => {
+                    let r0 = compute_smoothstep(builder, e0[0], e1[0], x[0], zero, one, two, three);
+                    let r1 = compute_smoothstep(builder, e0[1], e1[1], x[1], zero, one, two, three);
+                    Ok(TypedValue::Vec2([r0, r1]))
+                }
+                #[cfg(feature = "3d")]
+                (TypedValue::Vec3(e0), TypedValue::Vec3(e1), TypedValue::Vec3(x)) => {
+                    let r0 = compute_smoothstep(builder, e0[0], e1[0], x[0], zero, one, two, three);
+                    let r1 = compute_smoothstep(builder, e0[1], e1[1], x[1], zero, one, two, three);
+                    let r2 = compute_smoothstep(builder, e0[2], e1[2], x[2], zero, one, two, three);
+                    Ok(TypedValue::Vec3([r0, r1, r2]))
+                }
+                #[cfg(feature = "4d")]
+                (TypedValue::Vec4(e0), TypedValue::Vec4(e1), TypedValue::Vec4(x)) => {
+                    let r0 = compute_smoothstep(builder, e0[0], e1[0], x[0], zero, one, two, three);
+                    let r1 = compute_smoothstep(builder, e0[1], e1[1], x[1], zero, one, two, three);
+                    let r2 = compute_smoothstep(builder, e0[2], e1[2], x[2], zero, one, two, three);
+                    let r3 = compute_smoothstep(builder, e0[3], e1[3], x[3], zero, one, two, three);
+                    Ok(TypedValue::Vec4([r0, r1, r2, r3]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
+        // ====================================================================
+        // Transform functions
+        // ====================================================================
+        "rotate2d" => {
+            if args.len() != 2 {
+                return Err(CraneliftError::UnknownFunction(name.to_string()));
+            }
+            // rotate2d(v, angle) = [v.x*cos - v.y*sin, v.x*sin + v.y*cos]
+            match (&args[0], &args[1]) {
+                (TypedValue::Vec2(v), TypedValue::Scalar(angle)) => {
+                    let cos_call = builder.ins().call(math.cos, &[*angle]);
+                    let sin_call = builder.ins().call(math.sin, &[*angle]);
+                    let c = builder.inst_results(cos_call)[0];
+                    let s = builder.inst_results(sin_call)[0];
+                    let vx_c = builder.ins().fmul(v[0], c);
+                    let vy_s = builder.ins().fmul(v[1], s);
+                    let vx_s = builder.ins().fmul(v[0], s);
+                    let vy_c = builder.ins().fmul(v[1], c);
+                    let rx = builder.ins().fsub(vx_c, vy_s);
+                    let ry = builder.ins().fadd(vx_s, vy_c);
+                    Ok(TypedValue::Vec2([rx, ry]))
+                }
+                _ => Err(CraneliftError::UnknownFunction(name.to_string())),
+            }
+        }
+
         _ => Err(CraneliftError::UnknownFunction(name.to_string())),
     }
 }
@@ -3493,5 +4339,185 @@ mod tests {
         assert!(approx_eq(y, 3.0));
         assert!(approx_eq(z, 4.0));
         assert!(approx_eq(w, 5.0));
+    }
+
+    // ========================================================================
+    // New function tests (cross, normalize, reflect, hadamard, lerp/mix)
+    // ========================================================================
+
+    #[cfg(feature = "3d")]
+    #[test]
+    fn test_cross_vec3() {
+        // cross([1, 0, 0], [0, 1, 0]) = [0, 0, 1]
+        let expr = Expr::parse("cross(a, b)").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec3(
+                expr.ast(),
+                &[VarSpec::new("a", Type::Vec3), VarSpec::new("b", Type::Vec3)],
+            )
+            .unwrap();
+        let [x, y, z] = func.call(&[1.0, 0.0, 0.0, 0.0, 1.0, 0.0]);
+        assert!(approx_eq(x, 0.0));
+        assert!(approx_eq(y, 0.0));
+        assert!(approx_eq(z, 1.0));
+    }
+
+    #[test]
+    fn test_normalize_vec2() {
+        // normalize([3, 4]) = [0.6, 0.8]
+        let expr = Expr::parse("normalize(v)").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec2(expr.ast(), &[VarSpec::new("v", Type::Vec2)])
+            .unwrap();
+        let [x, y] = func.call(&[3.0, 4.0]);
+        assert!(approx_eq(x, 0.6));
+        assert!(approx_eq(y, 0.8));
+    }
+
+    #[cfg(feature = "3d")]
+    #[test]
+    fn test_normalize_vec3() {
+        // normalize([0, 3, 4]) = [0, 0.6, 0.8]
+        let expr = Expr::parse("normalize(v)").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec3(expr.ast(), &[VarSpec::new("v", Type::Vec3)])
+            .unwrap();
+        let [x, y, z] = func.call(&[0.0, 3.0, 4.0]);
+        assert!(approx_eq(x, 0.0));
+        assert!(approx_eq(y, 0.6));
+        assert!(approx_eq(z, 0.8));
+    }
+
+    #[test]
+    fn test_reflect_vec2() {
+        // reflect([1, -1], [0, 1]) = [1, 1]
+        let expr = Expr::parse("reflect(i, n)").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec2(
+                expr.ast(),
+                &[VarSpec::new("i", Type::Vec2), VarSpec::new("n", Type::Vec2)],
+            )
+            .unwrap();
+        let [x, y] = func.call(&[1.0, -1.0, 0.0, 1.0]);
+        assert!(approx_eq(x, 1.0));
+        assert!(approx_eq(y, 1.0));
+    }
+
+    #[cfg(feature = "3d")]
+    #[test]
+    fn test_reflect_vec3() {
+        // reflect([1, -1, 0], [0, 1, 0]) = [1, 1, 0]
+        let expr = Expr::parse("reflect(i, n)").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec3(
+                expr.ast(),
+                &[VarSpec::new("i", Type::Vec3), VarSpec::new("n", Type::Vec3)],
+            )
+            .unwrap();
+        let [x, y, z] = func.call(&[1.0, -1.0, 0.0, 0.0, 1.0, 0.0]);
+        assert!(approx_eq(x, 1.0));
+        assert!(approx_eq(y, 1.0));
+        assert!(approx_eq(z, 0.0));
+    }
+
+    #[test]
+    fn test_hadamard_vec2() {
+        // hadamard([2, 3], [4, 5]) = [8, 15]
+        let expr = Expr::parse("hadamard(a, b)").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec2(
+                expr.ast(),
+                &[VarSpec::new("a", Type::Vec2), VarSpec::new("b", Type::Vec2)],
+            )
+            .unwrap();
+        let [x, y] = func.call(&[2.0, 3.0, 4.0, 5.0]);
+        assert!(approx_eq(x, 8.0));
+        assert!(approx_eq(y, 15.0));
+    }
+
+    #[cfg(feature = "3d")]
+    #[test]
+    fn test_hadamard_vec3() {
+        // hadamard([1, 2, 3], [4, 5, 6]) = [4, 10, 18]
+        let expr = Expr::parse("hadamard(a, b)").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec3(
+                expr.ast(),
+                &[VarSpec::new("a", Type::Vec3), VarSpec::new("b", Type::Vec3)],
+            )
+            .unwrap();
+        let [x, y, z] = func.call(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+        assert!(approx_eq(x, 4.0));
+        assert!(approx_eq(y, 10.0));
+        assert!(approx_eq(z, 18.0));
+    }
+
+    #[test]
+    fn test_lerp_vec2() {
+        // lerp([0, 0], [10, 20], 0.5) = [5, 10]
+        let expr = Expr::parse("lerp(a, b, t)").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec2(
+                expr.ast(),
+                &[
+                    VarSpec::new("a", Type::Vec2),
+                    VarSpec::new("b", Type::Vec2),
+                    VarSpec::new("t", Type::Scalar),
+                ],
+            )
+            .unwrap();
+        let [x, y] = func.call(&[0.0, 0.0, 10.0, 20.0, 0.5]);
+        assert!(approx_eq(x, 5.0));
+        assert!(approx_eq(y, 10.0));
+    }
+
+    #[cfg(feature = "3d")]
+    #[test]
+    fn test_lerp_vec3() {
+        // lerp([0, 0, 0], [10, 20, 30], 0.25) = [2.5, 5, 7.5]
+        let expr = Expr::parse("lerp(a, b, t)").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec3(
+                expr.ast(),
+                &[
+                    VarSpec::new("a", Type::Vec3),
+                    VarSpec::new("b", Type::Vec3),
+                    VarSpec::new("t", Type::Scalar),
+                ],
+            )
+            .unwrap();
+        let [x, y, z] = func.call(&[0.0, 0.0, 0.0, 10.0, 20.0, 30.0, 0.25]);
+        assert!(approx_eq(x, 2.5));
+        assert!(approx_eq(y, 5.0));
+        assert!(approx_eq(z, 7.5));
+    }
+
+    #[test]
+    fn test_mix_vec2() {
+        // mix is alias for lerp
+        let expr = Expr::parse("mix(a, b, t)").unwrap();
+        let jit = LinalgJit::new().unwrap();
+        let func = jit
+            .compile_vec2(
+                expr.ast(),
+                &[
+                    VarSpec::new("a", Type::Vec2),
+                    VarSpec::new("b", Type::Vec2),
+                    VarSpec::new("t", Type::Scalar),
+                ],
+            )
+            .unwrap();
+        let [x, y] = func.call(&[0.0, 0.0, 10.0, 20.0, 0.25]);
+        assert!(approx_eq(x, 2.5));
+        assert!(approx_eq(y, 5.0));
     }
 }
