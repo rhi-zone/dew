@@ -154,11 +154,16 @@ Style reference: `~/git/lotus/packages/shared/src/index.css` (glassmorphic)
 - [ ] Dual numbers (autodiff)
 - [ ] Rotors/spinors (geometric algebra)
 
-### Nice to Have (maybe)
+### Expression Optimization (completed)
 
-- Expression normalization/simplification (constant folding, algebraic simplification)
-  - Would live in domain crates, not core
-  - Could be useful for optimization before JIT compilation
+- [x] Expression normalization/simplification (constant folding, algebraic simplification)
+  - Lives in dew-core behind `optimize` feature
+  - Passes: ConstantFolding, AlgebraicIdentities, PowerReduction, FunctionDecomposition
+  - CSE utilities via AstHasher (backends implement CSE during emit)
+  - Domain crates can add custom passes via `Pass` trait
+  - See docs/optimization.md for design decisions
+
+### Nice to Have (maybe)
 
 ## Backlog - Architecture
 

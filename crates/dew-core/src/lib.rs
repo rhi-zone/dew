@@ -140,6 +140,9 @@ use std::collections::HashSet;
 #[cfg(feature = "func")]
 use std::sync::Arc;
 
+#[cfg(feature = "optimize")]
+pub mod optimize;
+
 // ============================================================================
 // ExprFn trait and registry (func feature)
 // ============================================================================

@@ -31,6 +31,7 @@ export default withMermaid(
             text: 'Guide',
             items: [
               { text: 'Introduction', link: '/introduction' },
+              { text: 'Optimization', link: '/optimization' },
             ]
           },
           {

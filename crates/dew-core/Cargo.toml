@@ -10,6 +10,7 @@ default = ["introspect"]
 cond = []
 func = []
 introspect = []  # AST introspection: free_vars, etc.
+optimize = []    # Expression optimization passes
 
 [dependencies]
 
