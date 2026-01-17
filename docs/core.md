@@ -21,6 +21,7 @@ dew-core provides opt-in features to manage complexity:
 | (none)  | Basic expressions: numbers, variables, arithmetic, power |
 | `cond`  | Conditionals: `if`/`then`/`else`, comparisons, boolean logic |
 | `func`  | Function calls: `name(args...)`, `FunctionRegistry` |
+| `optimize` | Expression optimization passes (constant folding, algebraic simplification) |
 
 ## Basic Usage
 
@@ -195,6 +196,29 @@ Eval errors identify missing variables:
 let result = expr.eval(&empty_vars);
 // EvalError::UnknownVariable("x")
 ```
+
+## Optimization (feature = "optimize")
+
+Enable with `features = ["optimize"]`:
+
+```rust
+use rhizome_dew_core::{Expr, Ast};
+use rhizome_dew_core::optimize::{optimize, standard_passes};
+
+let expr = Expr::parse("(1 + 2) * x + 0").unwrap();
+let optimized = optimize(expr.ast().clone(), &standard_passes());
+
+// (1 + 2) folded to 3, + 0 eliminated
+assert_eq!(optimized.to_string(), "(3 * x)");
+```
+
+Available passes:
+- **ConstantFolding**: Evaluates `1 + 2` → `3`
+- **AlgebraicIdentities**: Eliminates `x * 1`, `x + 0`, etc.
+- **PowerReduction**: Converts `x ^ 2` → `x * x`
+- **FunctionDecomposition**: Uses `ExprFn::decompose()` to expand functions
+
+See the [Optimization Guide](/optimization) for details.
 
 ## Combining with Domain Crates
 

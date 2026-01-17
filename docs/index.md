@@ -18,8 +18,8 @@ features:
     details: Scalar math, linear algebra, complex numbers, quaternions
   - title: Multiple Backends
     details: WGSL (GPU shaders), Cranelift (JIT), Lua (scripting)
-  - title: Generic Numeric Types
-    details: Works with f32, f64 via num-traits
+  - title: Expression Optimization
+    details: Constant folding, algebraic simplification, power reduction
   - title: Composable
     details: Build complex expressions from simple primitives
 ---
