@@ -1,5 +1,8 @@
 //! Standard linalg functions: dot, cross, normalize, length, etc.
 
+// `mut` is needed when 4d feature is enabled for sigs.push()
+#![allow(unused_mut)]
+
 use crate::{LinalgFn, Signature, Type, Value};
 use num_traits::Float;
 
