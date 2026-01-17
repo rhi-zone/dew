@@ -11,7 +11,7 @@ use rhizome_dew_cond::cranelift as cond;
 use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
 
-/// Dispatch a JIT function call based on parameter count.
+/// Dispatch a JIT function call based on parameter count (f32 version).
 /// Centralizes the unsafe transmute logic for all arities 0-16.
 macro_rules! jit_call {
     ($func_ptr:expr, $args:expr, $ret:ty, []) => {{
@@ -23,6 +23,19 @@ macro_rules! jit_call {
         f($($args[$idx]),+)
     }};
     (@ty $idx:tt) => { f32 };
+}
+
+/// Dispatch a JIT function call based on parameter count (i32 version).
+macro_rules! jit_call_int {
+    ($func_ptr:expr, $args:expr, $ret:ty, []) => {{
+        let f: extern "C" fn() -> $ret = std::mem::transmute($func_ptr);
+        f()
+    }};
+    ($func_ptr:expr, $args:expr, $ret:ty, [$($idx:tt),+]) => {{
+        let f: extern "C" fn($(jit_call_int!(@ty $idx)),+) -> $ret = std::mem::transmute($func_ptr);
+        f($($args[$idx]),+)
+    }};
+    (@ty $idx:tt) => { i32 };
 }
 
 // ============================================================================
@@ -82,6 +95,45 @@ extern "C" fn math_sqrt(x: f32) -> f32 {
 }
 extern "C" fn math_inversesqrt(x: f32) -> f32 {
     1.0 / x.sqrt()
+}
+
+// Integer math wrappers
+extern "C" fn math_pow_int(base: i32, exp: i32) -> i32 {
+    if exp < 0 {
+        0 // Integer power with negative exponent returns 0
+    } else {
+        let mut result = 1i32;
+        let mut b = base;
+        let mut e = exp as u32;
+        while e > 0 {
+            if e & 1 == 1 {
+                result = result.wrapping_mul(b);
+            }
+            b = b.wrapping_mul(b);
+            e >>= 1;
+        }
+        result
+    }
+}
+
+extern "C" fn math_abs_int(x: i32) -> i32 {
+    x.abs()
+}
+
+extern "C" fn math_min_int(a: i32, b: i32) -> i32 {
+    a.min(b)
+}
+
+extern "C" fn math_max_int(a: i32, b: i32) -> i32 {
+    a.max(b)
+}
+
+extern "C" fn math_clamp_int(x: i32, lo: i32, hi: i32) -> i32 {
+    x.max(lo).min(hi)
+}
+
+extern "C" fn math_sign_int(x: i32) -> i32 {
+    x.signum()
 }
 
 struct MathSymbol {
@@ -185,6 +237,41 @@ fn math_symbols() -> Vec<MathSymbol> {
     ]
 }
 
+fn math_symbols_int() -> Vec<MathSymbol> {
+    vec![
+        MathSymbol {
+            name: "dew_pow_int",
+            ptr: math_pow_int as *const u8,
+            arity: 2,
+        },
+        MathSymbol {
+            name: "dew_abs_int",
+            ptr: math_abs_int as *const u8,
+            arity: 1,
+        },
+        MathSymbol {
+            name: "dew_min_int",
+            ptr: math_min_int as *const u8,
+            arity: 2,
+        },
+        MathSymbol {
+            name: "dew_max_int",
+            ptr: math_max_int as *const u8,
+            arity: 2,
+        },
+        MathSymbol {
+            name: "dew_clamp_int",
+            ptr: math_clamp_int as *const u8,
+            arity: 3,
+        },
+        MathSymbol {
+            name: "dew_sign_int",
+            ptr: math_sign_int as *const u8,
+            arity: 1,
+        },
+    ]
+}
+
 // ============================================================================
 // Compiled function
 // ============================================================================
@@ -247,6 +334,72 @@ impl CompiledFn {
                     self.func_ptr,
                     args,
                     f32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+                ),
+                _ => panic!("too many parameters (max 16)"),
+            }
+        }
+    }
+}
+
+/// A compiled integer function that can be called.
+pub struct CompiledFnInt {
+    _module: JITModule,
+    func_ptr: *const u8,
+    param_count: usize,
+}
+
+// SAFETY: The compiled code is self-contained
+unsafe impl Send for CompiledFnInt {}
+unsafe impl Sync for CompiledFnInt {}
+
+impl CompiledFnInt {
+    /// Calls the compiled function with the given arguments.
+    pub fn call(&self, args: &[i32]) -> i32 {
+        assert_eq!(args.len(), self.param_count, "wrong number of arguments");
+
+        unsafe {
+            match self.param_count {
+                0 => jit_call_int!(self.func_ptr, args, i32, []),
+                1 => jit_call_int!(self.func_ptr, args, i32, [0]),
+                2 => jit_call_int!(self.func_ptr, args, i32, [0, 1]),
+                3 => jit_call_int!(self.func_ptr, args, i32, [0, 1, 2]),
+                4 => jit_call_int!(self.func_ptr, args, i32, [0, 1, 2, 3]),
+                5 => jit_call_int!(self.func_ptr, args, i32, [0, 1, 2, 3, 4]),
+                6 => jit_call_int!(self.func_ptr, args, i32, [0, 1, 2, 3, 4, 5]),
+                7 => jit_call_int!(self.func_ptr, args, i32, [0, 1, 2, 3, 4, 5, 6]),
+                8 => jit_call_int!(self.func_ptr, args, i32, [0, 1, 2, 3, 4, 5, 6, 7]),
+                9 => jit_call_int!(self.func_ptr, args, i32, [0, 1, 2, 3, 4, 5, 6, 7, 8]),
+                10 => jit_call_int!(self.func_ptr, args, i32, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+                11 => jit_call_int!(self.func_ptr, args, i32, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
+                12 => jit_call_int!(
+                    self.func_ptr,
+                    args,
+                    i32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+                ),
+                13 => jit_call_int!(
+                    self.func_ptr,
+                    args,
+                    i32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                ),
+                14 => jit_call_int!(
+                    self.func_ptr,
+                    args,
+                    i32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+                ),
+                15 => jit_call_int!(
+                    self.func_ptr,
+                    args,
+                    i32,
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+                ),
+                16 => jit_call_int!(
+                    self.func_ptr,
+                    args,
+                    i32,
                     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
                 ),
                 _ => panic!("too many parameters (max 16)"),
@@ -341,6 +494,88 @@ impl ScalarJit {
     }
 }
 
+/// JIT compiler for integer scalar expressions.
+pub struct ScalarJitInt {
+    builder: JITBuilder,
+}
+
+impl ScalarJitInt {
+    /// Creates a new integer JIT compiler.
+    pub fn new() -> Result<Self, String> {
+        let mut builder = JITBuilder::new(cranelift_module::default_libcall_names())
+            .map_err(|e| e.to_string())?;
+
+        // Register integer math symbols
+        for sym in math_symbols_int() {
+            builder.symbol(sym.name, sym.ptr);
+        }
+
+        Ok(Self { builder })
+    }
+
+    /// Compiles an expression to a callable integer function.
+    pub fn compile(self, ast: &Ast, params: &[&str]) -> Result<CompiledFnInt, String> {
+        let mut module = JITModule::new(self.builder);
+        let mut ctx = module.make_context();
+
+        // Declare math functions
+        let math_ids = declare_math_funcs_int(&mut module)?;
+
+        // Build function signature (i32 params and return)
+        let mut sig = module.make_signature();
+        for _ in params {
+            sig.params.push(AbiParam::new(types::I32));
+        }
+        sig.returns.push(AbiParam::new(types::I32));
+
+        let func_id = module
+            .declare_function("expr_int", Linkage::Export, &sig)
+            .map_err(|e| e.to_string())?;
+
+        ctx.func.signature = sig;
+
+        // Build function body
+        let mut builder_ctx = FunctionBuilderContext::new();
+        {
+            let mut builder = FunctionBuilder::new(&mut ctx.func, &mut builder_ctx);
+            let entry_block = builder.create_block();
+            builder.append_block_params_for_function_params(entry_block);
+            builder.switch_to_block(entry_block);
+            builder.seal_block(entry_block);
+
+            // Import math functions
+            let math_refs = import_math_funcs_int(&mut builder, &mut module, &math_ids);
+
+            // Map params
+            let mut var_map: HashMap<String, CraneliftValue> = HashMap::new();
+            for (i, name) in params.iter().enumerate() {
+                let val = builder.block_params(entry_block)[i];
+                var_map.insert(name.to_string(), val);
+            }
+
+            // Compile
+            let result = compile_ast_int(ast, &mut builder, &var_map, &math_refs)?;
+            builder.ins().return_(&[result]);
+            builder.finalize();
+        }
+
+        // Compile to machine code
+        module
+            .define_function(func_id, &mut ctx)
+            .map_err(|e| e.to_string())?;
+        module.clear_context(&mut ctx);
+        module.finalize_definitions().map_err(|e| e.to_string())?;
+
+        let func_ptr = module.get_finalized_function(func_id);
+
+        Ok(CompiledFnInt {
+            _module: module,
+            func_ptr,
+            param_count: params.len(),
+        })
+    }
+}
+
 // ============================================================================
 // Math function registration
 // ============================================================================
@@ -399,7 +634,7 @@ fn compile_ast(
     math: &MathRefs,
 ) -> Result<CraneliftValue, String> {
     match ast {
-        Ast::Num(n) => Ok(builder.ins().f32const(*n)),
+        Ast::Num(n) => Ok(builder.ins().f32const(*n as f32)),
 
         Ast::Var(name) => vars
             .get(name)
@@ -419,6 +654,13 @@ fn compile_ast(
                     let call = builder.ins().call(*func_ref, &[l, r]);
                     builder.inst_results(call)[0]
                 }
+                // Bitwise ops not supported for floats - convert through i32
+                BinOp::Rem | BinOp::BitAnd | BinOp::BitOr | BinOp::Shl | BinOp::Shr => {
+                    return Err(format!(
+                        "bitwise operator {:?} not supported for floats",
+                        op
+                    ));
+                }
             })
         }
 
@@ -432,6 +674,7 @@ fn compile_ast(
                     let inverted = cond::emit_not(builder, bool_val);
                     cond::bool_to_scalar(builder, inverted)
                 }
+                UnaryOp::BitNot => return Err("bitwise NOT not supported for floats".to_string()),
             })
         }
 
@@ -606,6 +849,257 @@ fn compile_function(
 }
 
 // ============================================================================
+// Integer math function registration
+// ============================================================================
+
+fn declare_math_funcs_int(module: &mut JITModule) -> Result<DeclaredMathFuncs, String> {
+    let mut func_ids = HashMap::new();
+
+    for sym in math_symbols_int() {
+        let mut sig = module.make_signature();
+        for _ in 0..sym.arity {
+            sig.params.push(AbiParam::new(types::I32));
+        }
+        sig.returns.push(AbiParam::new(types::I32));
+
+        let func_id = module
+            .declare_function(sym.name, Linkage::Import, &sig)
+            .map_err(|e| e.to_string())?;
+
+        func_ids.insert(sym.name.to_string(), (func_id, sym.arity));
+    }
+
+    Ok(DeclaredMathFuncs { func_ids })
+}
+
+fn import_math_funcs_int(
+    builder: &mut FunctionBuilder,
+    module: &mut JITModule,
+    declared: &DeclaredMathFuncs,
+) -> MathRefs {
+    let mut funcs = HashMap::new();
+
+    for (name, (func_id, _)) in &declared.func_ids {
+        let func_ref = module.declare_func_in_func(*func_id, builder.func);
+        funcs.insert(name.clone(), func_ref);
+    }
+
+    MathRefs { funcs }
+}
+
+// ============================================================================
+// Integer AST compilation
+// ============================================================================
+
+fn compile_ast_int(
+    ast: &Ast,
+    builder: &mut FunctionBuilder,
+    vars: &HashMap<String, CraneliftValue>,
+    math: &MathRefs,
+) -> Result<CraneliftValue, String> {
+    match ast {
+        Ast::Num(n) => {
+            // Check for fractional part
+            if n.fract() != 0.0 {
+                return Err(format!("fractional literal {} not allowed for integers", n));
+            }
+            Ok(builder.ins().iconst(types::I32, *n as i64))
+        }
+
+        Ast::Var(name) => vars
+            .get(name)
+            .copied()
+            .ok_or_else(|| format!("unknown variable: {}", name)),
+
+        Ast::BinOp(op, left, right) => {
+            let l = compile_ast_int(left, builder, vars, math)?;
+            let r = compile_ast_int(right, builder, vars, math)?;
+            Ok(match op {
+                BinOp::Add => builder.ins().iadd(l, r),
+                BinOp::Sub => builder.ins().isub(l, r),
+                BinOp::Mul => builder.ins().imul(l, r),
+                BinOp::Div => builder.ins().sdiv(l, r),
+                BinOp::Pow => {
+                    let func_ref = math
+                        .funcs
+                        .get("dew_pow_int")
+                        .ok_or("pow not available for integers")?;
+                    let call = builder.ins().call(*func_ref, &[l, r]);
+                    builder.inst_results(call)[0]
+                }
+                BinOp::Rem => builder.ins().srem(l, r),
+                BinOp::BitAnd => builder.ins().band(l, r),
+                BinOp::BitOr => builder.ins().bor(l, r),
+                BinOp::Shl => builder.ins().ishl(l, r),
+                BinOp::Shr => builder.ins().sshr(l, r),
+            })
+        }
+
+        Ast::UnaryOp(op, inner) => {
+            let v = compile_ast_int(inner, builder, vars, math)?;
+            Ok(match op {
+                UnaryOp::Neg => builder.ins().ineg(v),
+                UnaryOp::Not => {
+                    // not(x) returns 1 if x == 0, else 0
+                    let zero = builder.ins().iconst(types::I32, 0);
+                    let one = builder.ins().iconst(types::I32, 1);
+                    let is_zero =
+                        builder
+                            .ins()
+                            .icmp(cranelift_codegen::ir::condcodes::IntCC::Equal, v, zero);
+                    builder.ins().select(is_zero, one, zero)
+                }
+                UnaryOp::BitNot => builder.ins().bnot(v),
+            })
+        }
+
+        Ast::Compare(op, left, right) => {
+            use cranelift_codegen::ir::condcodes::IntCC;
+            let l = compile_ast_int(left, builder, vars, math)?;
+            let r = compile_ast_int(right, builder, vars, math)?;
+            let cc = match op {
+                rhizome_dew_core::CompareOp::Lt => IntCC::SignedLessThan,
+                rhizome_dew_core::CompareOp::Le => IntCC::SignedLessThanOrEqual,
+                rhizome_dew_core::CompareOp::Gt => IntCC::SignedGreaterThan,
+                rhizome_dew_core::CompareOp::Ge => IntCC::SignedGreaterThanOrEqual,
+                rhizome_dew_core::CompareOp::Eq => IntCC::Equal,
+                rhizome_dew_core::CompareOp::Ne => IntCC::NotEqual,
+            };
+            let cmp = builder.ins().icmp(cc, l, r);
+            let one = builder.ins().iconst(types::I32, 1);
+            let zero = builder.ins().iconst(types::I32, 0);
+            Ok(builder.ins().select(cmp, one, zero))
+        }
+
+        Ast::And(left, right) => {
+            let l = compile_ast_int(left, builder, vars, math)?;
+            let r = compile_ast_int(right, builder, vars, math)?;
+            let zero = builder.ins().iconst(types::I32, 0);
+            let one = builder.ins().iconst(types::I32, 1);
+            let l_nonzero =
+                builder
+                    .ins()
+                    .icmp(cranelift_codegen::ir::condcodes::IntCC::NotEqual, l, zero);
+            let r_nonzero =
+                builder
+                    .ins()
+                    .icmp(cranelift_codegen::ir::condcodes::IntCC::NotEqual, r, zero);
+            let both = builder.ins().band(l_nonzero, r_nonzero);
+            Ok(builder.ins().select(both, one, zero))
+        }
+
+        Ast::Or(left, right) => {
+            let l = compile_ast_int(left, builder, vars, math)?;
+            let r = compile_ast_int(right, builder, vars, math)?;
+            let zero = builder.ins().iconst(types::I32, 0);
+            let one = builder.ins().iconst(types::I32, 1);
+            let l_nonzero =
+                builder
+                    .ins()
+                    .icmp(cranelift_codegen::ir::condcodes::IntCC::NotEqual, l, zero);
+            let r_nonzero =
+                builder
+                    .ins()
+                    .icmp(cranelift_codegen::ir::condcodes::IntCC::NotEqual, r, zero);
+            let either = builder.ins().bor(l_nonzero, r_nonzero);
+            Ok(builder.ins().select(either, one, zero))
+        }
+
+        Ast::If(cond_ast, then_ast, else_ast) => {
+            let c = compile_ast_int(cond_ast, builder, vars, math)?;
+            let then_val = compile_ast_int(then_ast, builder, vars, math)?;
+            let else_val = compile_ast_int(else_ast, builder, vars, math)?;
+            let zero = builder.ins().iconst(types::I32, 0);
+            let cond_nonzero =
+                builder
+                    .ins()
+                    .icmp(cranelift_codegen::ir::condcodes::IntCC::NotEqual, c, zero);
+            Ok(builder.ins().select(cond_nonzero, then_val, else_val))
+        }
+
+        Ast::Call(name, args) => {
+            let arg_vals: Vec<CraneliftValue> = args
+                .iter()
+                .map(|a| compile_ast_int(a, builder, vars, math))
+                .collect::<Result<_, _>>()?;
+
+            compile_function_int(name, &arg_vals, builder, math)
+        }
+    }
+}
+
+fn compile_function_int(
+    name: &str,
+    args: &[CraneliftValue],
+    builder: &mut FunctionBuilder,
+    math: &MathRefs,
+) -> Result<CraneliftValue, String> {
+    use cranelift_codegen::ir::condcodes::IntCC;
+
+    Ok(match name {
+        // Functions via extern calls
+        "abs" => {
+            let func_ref = math.funcs.get("dew_abs_int").ok_or("abs not available")?;
+            let call = builder.ins().call(*func_ref, &[args[0]]);
+            builder.inst_results(call)[0]
+        }
+        "sign" => {
+            let func_ref = math.funcs.get("dew_sign_int").ok_or("sign not available")?;
+            let call = builder.ins().call(*func_ref, &[args[0]]);
+            builder.inst_results(call)[0]
+        }
+        "min" => {
+            let func_ref = math.funcs.get("dew_min_int").ok_or("min not available")?;
+            let call = builder.ins().call(*func_ref, &[args[0], args[1]]);
+            builder.inst_results(call)[0]
+        }
+        "max" => {
+            let func_ref = math.funcs.get("dew_max_int").ok_or("max not available")?;
+            let call = builder.ins().call(*func_ref, &[args[0], args[1]]);
+            builder.inst_results(call)[0]
+        }
+        "clamp" => {
+            let func_ref = math
+                .funcs
+                .get("dew_clamp_int")
+                .ok_or("clamp not available")?;
+            let call = builder.ins().call(*func_ref, &[args[0], args[1], args[2]]);
+            builder.inst_results(call)[0]
+        }
+        "pow" => {
+            let func_ref = math.funcs.get("dew_pow_int").ok_or("pow not available")?;
+            let call = builder.ins().call(*func_ref, &[args[0], args[1]]);
+            builder.inst_results(call)[0]
+        }
+
+        // Interpolation (integer version)
+        "lerp" | "mix" => {
+            let (a, b, t) = (args[0], args[1], args[2]);
+            let diff = builder.ins().isub(b, a);
+            let scaled = builder.ins().imul(diff, t);
+            builder.ins().iadd(a, scaled)
+        }
+        "step" => {
+            let (edge, x) = (args[0], args[1]);
+            let zero = builder.ins().iconst(types::I32, 0);
+            let one = builder.ins().iconst(types::I32, 1);
+            let cmp = builder.ins().icmp(IntCC::SignedLessThan, x, edge);
+            builder.ins().select(cmp, zero, one)
+        }
+
+        // Trig/exp functions not available for integers
+        "sin" | "cos" | "tan" | "asin" | "acos" | "atan" | "atan2" | "sinh" | "cosh" | "tanh"
+        | "exp" | "exp2" | "ln" | "log" | "log2" | "log10" | "sqrt" | "inversesqrt" | "floor"
+        | "ceil" | "round" | "trunc" | "fract" | "smoothstep" | "saturate" | "inverse_lerp"
+        | "remap" | "pi" | "e" | "tau" => {
+            return Err(format!("function {} not available for integers", name));
+        }
+
+        _ => return Err(format!("unknown function: {}", name)),
+    })
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 
@@ -720,5 +1214,61 @@ mod tests {
     fn test_not() {
         assert_eq!(eval("not 0", &[], &[]), 1.0);
         assert_eq!(eval("not 1", &[], &[]), 0.0);
+    }
+
+    // Integer JIT tests
+    fn eval_int(input: &str, params: &[&str], args: &[i32]) -> i32 {
+        let expr = Expr::parse(input).unwrap();
+        let jit = ScalarJitInt::new().unwrap();
+        let func = jit.compile(expr.ast(), params).unwrap();
+        func.call(args)
+    }
+
+    #[test]
+    fn test_int_operators() {
+        assert_eq!(eval_int("x + y", &["x", "y"], &[3, 4]), 7);
+        assert_eq!(eval_int("x * y", &["x", "y"], &[3, 4]), 12);
+        assert_eq!(eval_int("x - y", &["x", "y"], &[10, 3]), 7);
+        assert_eq!(eval_int("x / y", &["x", "y"], &[10, 3]), 3);
+        assert_eq!(eval_int("-x", &["x"], &[5]), -5);
+        assert_eq!(eval_int("x ^ 3", &["x"], &[2]), 8);
+    }
+
+    #[test]
+    fn test_int_modulo() {
+        assert_eq!(eval_int("x % y", &["x", "y"], &[10, 3]), 1);
+        assert_eq!(eval_int("8 % 3", &[], &[]), 2);
+    }
+
+    #[test]
+    fn test_int_bitwise() {
+        assert_eq!(eval_int("x & y", &["x", "y"], &[0b1010, 0b1100]), 0b1000);
+        assert_eq!(eval_int("x | y", &["x", "y"], &[0b1010, 0b1100]), 0b1110);
+        assert_eq!(eval_int("x << 2", &["x"], &[1]), 4);
+        assert_eq!(eval_int("x >> 2", &["x"], &[16]), 4);
+        assert_eq!(eval_int("~0", &[], &[]), -1);
+    }
+
+    #[test]
+    fn test_int_compare() {
+        assert_eq!(eval_int("1 < 2", &[], &[]), 1);
+        assert_eq!(eval_int("2 < 1", &[], &[]), 0);
+        assert_eq!(eval_int("x == 5", &["x"], &[5]), 1);
+    }
+
+    #[test]
+    fn test_int_if_then_else() {
+        assert_eq!(eval_int("if 1 then 10 else 20", &[], &[]), 10);
+        assert_eq!(eval_int("if 0 then 10 else 20", &[], &[]), 20);
+        assert_eq!(eval_int("if x > 5 then 1 else 0", &["x"], &[10]), 1);
+    }
+
+    #[test]
+    fn test_int_functions() {
+        assert_eq!(eval_int("abs(x)", &["x"], &[-5]), 5);
+        assert_eq!(eval_int("min(x, y)", &["x", "y"], &[3, 7]), 3);
+        assert_eq!(eval_int("max(x, y)", &["x", "y"], &[3, 7]), 7);
+        assert_eq!(eval_int("clamp(x, 0, 10)", &["x"], &[15]), 10);
+        assert_eq!(eval_int("sign(x)", &["x"], &[-5]), -1);
     }
 }

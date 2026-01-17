@@ -895,7 +895,7 @@ fn compile_ast(
     math: &MathFuncs,
 ) -> Result<TypedValue, CraneliftError> {
     match ast {
-        Ast::Num(n) => Ok(TypedValue::Scalar(builder.ins().f32const(*n))),
+        Ast::Num(n) => Ok(TypedValue::Scalar(builder.ins().f32const(*n as f32))),
 
         Ast::Var(name) => vars
             .get(name)
@@ -1401,6 +1401,11 @@ fn compile_binop(
                 BinOp::Mul => "*",
                 BinOp::Div => "/",
                 BinOp::Pow => "^",
+                BinOp::Rem => "%",
+                BinOp::BitAnd => "&",
+                BinOp::BitOr => "|",
+                BinOp::Shl => "<<",
+                BinOp::Shr => ">>",
             },
             left: left.typ(),
             right: right.typ(),
@@ -1472,6 +1477,7 @@ fn compile_unaryop(
             ])),
         },
         UnaryOp::Not => Err(CraneliftError::UnsupportedConditional("Not")),
+        UnaryOp::BitNot => Err(CraneliftError::UnsupportedConditional("BitNot")),
     }
 }
 
