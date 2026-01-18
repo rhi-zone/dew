@@ -23,7 +23,7 @@ rhizome-dew-core = { path = "../dew-core", features = ["cond", "func"] }
 
 # Optional domain crates
 rhizome-dew-scalar = { path = "../dew-scalar", features = ["wgsl", "glsl", "lua-codegen"], optional = true }
-rhizome-dew-linalg = { path = "../dew-linalg", features = ["wgsl", "glsl", "lua-codegen"], optional = true }
+rhizome-dew-linalg = { path = "../dew-linalg", features = ["4d", "wgsl", "glsl", "lua-codegen"], optional = true }
 rhizome-dew-complex = { path = "../dew-complex", features = ["wgsl", "glsl", "lua-codegen"], optional = true }
 rhizome-dew-quaternion = { path = "../dew-quaternion", features = ["wgsl", "glsl", "lua-codegen"], optional = true }
 
@@ -36,7 +36,7 @@ console_error_panic_hook = { version = "0.1", optional = true }
 wasm-bindgen-test = "0.3"
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-O", "--enable-bulk-memory"]
+wasm-opt = ["-O", "--enable-bulk-memory", "--enable-nontrapping-float-to-int"]
 
 [package.metadata.wasm-pack.profile.dev]
 wasm-opt = false
