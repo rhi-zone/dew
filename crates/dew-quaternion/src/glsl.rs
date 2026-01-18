@@ -64,6 +64,13 @@ pub struct GlslExpr {
     pub typ: Type,
 }
 
+/// Result of full GLSL emission with accumulated statements.
+struct Emission {
+    statements: Vec<String>,
+    expr: String,
+    typ: Type,
+}
+
 /// Emit GLSL code for an AST with type propagation.
 pub fn emit_glsl(ast: &Ast, var_types: &HashMap<String, Type>) -> Result<GlslExpr, GlslError> {
     match ast {
@@ -167,13 +174,90 @@ pub fn emit_glsl(ast: &Ast, var_types: &HashMap<String, Type>) -> Result<GlslExp
         }
 
         Ast::Let { .. } => {
-            // Let bindings require statement-based codegen.
-            // Use the LetInlining optimization pass before emitting.
-            Err(GlslError::UnsupportedFeature(
-                "let bindings (use LetInlining pass first)".to_string(),
-            ))
+            // Delegate to emit_full which handles let bindings.
+            let emission = emit_full(ast, var_types)?;
+            if !emission.statements.is_empty() {
+                return Err(GlslError::UnsupportedFeature(
+                    "let bindings in expression context (use emit_glsl_fn)".to_string(),
+                ));
+            }
+            Ok(GlslExpr {
+                code: emission.expr,
+                typ: emission.typ,
+            })
         }
     }
+}
+
+/// Emit GLSL with full statement support.
+fn emit_full(ast: &Ast, var_types: &HashMap<String, Type>) -> Result<Emission, GlslError> {
+    match ast {
+        Ast::Let { name, value, body } => {
+            let value_emission = emit_full(value, var_types)?;
+            let mut new_var_types = var_types.clone();
+            new_var_types.insert(name.clone(), value_emission.typ);
+            let body_emission = emit_full(body, &new_var_types)?;
+
+            let mut statements = value_emission.statements;
+            statements.push(format!(
+                "{} {} = {};",
+                type_to_glsl(value_emission.typ),
+                name,
+                value_emission.expr
+            ));
+            statements.extend(body_emission.statements);
+
+            Ok(Emission {
+                statements,
+                expr: body_emission.expr,
+                typ: body_emission.typ,
+            })
+        }
+        _ => {
+            let result = emit_glsl(ast, var_types)?;
+            Ok(Emission {
+                statements: vec![],
+                expr: result.code,
+                typ: result.typ,
+            })
+        }
+    }
+}
+
+/// Emit a complete GLSL function with let statement support.
+pub fn emit_glsl_fn(
+    name: &str,
+    ast: &Ast,
+    params: &[(&str, Type)],
+    return_type: Type,
+) -> Result<String, GlslError> {
+    let var_types: HashMap<String, Type> =
+        params.iter().map(|(n, t)| (n.to_string(), *t)).collect();
+    let emission = emit_full(ast, &var_types)?;
+
+    let params_str = params
+        .iter()
+        .map(|(n, t)| format!("{} {}", type_to_glsl(*t), n))
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    let mut body = String::new();
+    for stmt in &emission.statements {
+        body.push_str("    ");
+        body.push_str(stmt);
+        body.push('\n');
+    }
+    body.push_str("    return ");
+    body.push_str(&emission.expr);
+    body.push_str(";\n");
+
+    Ok(format!(
+        "{} {}({}) {{\n{}}}",
+        type_to_glsl(return_type),
+        name,
+        params_str,
+        body
+    ))
 }
 
 fn emit_binop(op: BinOp, left: GlslExpr, right: GlslExpr) -> Result<GlslExpr, GlslError> {
@@ -577,5 +661,47 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.typ, Type::Quaternion);
+    }
+
+    #[test]
+    fn test_emit_glsl_fn_simple() {
+        let expr = Expr::parse("normalize(q)").unwrap();
+        let code = emit_glsl_fn(
+            "norm_quat",
+            expr.ast(),
+            &[("q", Type::Quaternion)],
+            Type::Quaternion,
+        )
+        .unwrap();
+        assert!(code.contains("vec4 norm_quat(vec4 q)"));
+        assert!(code.contains("return normalize(q);"));
+    }
+
+    #[test]
+    fn test_emit_glsl_fn_with_let() {
+        let expr = Expr::parse("let sq = q * q; sq + q").unwrap();
+        let code = emit_glsl_fn(
+            "square_add",
+            expr.ast(),
+            &[("q", Type::Quaternion)],
+            Type::Quaternion,
+        )
+        .unwrap();
+        assert!(code.contains("vec4 sq ="));
+        assert!(code.contains("return"));
+    }
+
+    #[test]
+    fn test_emit_glsl_fn_rotate() {
+        let expr = Expr::parse("let rotated = q * v; rotated + v").unwrap();
+        let code = emit_glsl_fn(
+            "rotate_add",
+            expr.ast(),
+            &[("q", Type::Quaternion), ("v", Type::Vec3)],
+            Type::Vec3,
+        )
+        .unwrap();
+        assert!(code.contains("vec3 rotated ="));
+        assert!(code.contains("return"));
     }
 }

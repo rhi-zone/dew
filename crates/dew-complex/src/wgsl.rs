@@ -62,6 +62,31 @@ pub struct WgslExpr {
     pub typ: Type,
 }
 
+/// Result of emitting code with statement support.
+struct Emission {
+    statements: Vec<String>,
+    expr: String,
+    typ: Type,
+}
+
+impl Emission {
+    fn expr_only(expr: String, typ: Type) -> Self {
+        Self {
+            statements: vec![],
+            expr,
+            typ,
+        }
+    }
+
+    fn with_statements(statements: Vec<String>, expr: String, typ: Type) -> Self {
+        Self {
+            statements,
+            expr,
+            typ,
+        }
+    }
+}
+
 /// Emit WGSL code for an AST with type propagation.
 pub fn emit_wgsl(ast: &Ast, var_types: &HashMap<String, Type>) -> Result<WgslExpr, WgslError> {
     match ast {
@@ -167,11 +192,84 @@ pub fn emit_wgsl(ast: &Ast, var_types: &HashMap<String, Type>) -> Result<WgslExp
         }
 
         Ast::Let { .. } => {
-            // Let bindings require statement-based codegen.
-            // Use the LetInlining optimization pass before emitting.
-            Err(WgslError::UnsupportedFeature(
-                "let bindings (use LetInlining pass first)".to_string(),
+            // Let in expression context: delegate to emit_full
+            let emission = emit_full(ast, var_types)?;
+            if emission.statements.is_empty() {
+                Ok(WgslExpr {
+                    code: emission.expr,
+                    typ: emission.typ,
+                })
+            } else {
+                Err(WgslError::UnsupportedFeature(
+                    "let in expression position (use emit_wgsl_fn for full support)".to_string(),
+                ))
+            }
+        }
+    }
+}
+
+/// Emit a complete WGSL function with let statement support.
+pub fn emit_wgsl_fn(
+    name: &str,
+    ast: &Ast,
+    params: &[(&str, Type)],
+    return_type: Type,
+) -> Result<String, WgslError> {
+    let var_types: HashMap<String, Type> =
+        params.iter().map(|(n, t)| (n.to_string(), *t)).collect();
+    let emission = emit_full(ast, &var_types)?;
+
+    let param_list: Vec<String> = params
+        .iter()
+        .map(|(n, t)| format!("{}: {}", n, type_to_wgsl(*t)))
+        .collect();
+
+    let mut body = String::new();
+    for stmt in emission.statements {
+        body.push_str("    ");
+        body.push_str(&stmt);
+        body.push('\n');
+    }
+    body.push_str("    return ");
+    body.push_str(&emission.expr);
+    body.push(';');
+
+    Ok(format!(
+        "fn {}({}) -> {} {{\n{}\n}}",
+        name,
+        param_list.join(", "),
+        type_to_wgsl(return_type),
+        body
+    ))
+}
+
+/// Emit with full statement support for let bindings.
+fn emit_full(ast: &Ast, var_types: &HashMap<String, Type>) -> Result<Emission, WgslError> {
+    match ast {
+        Ast::Let { name, value, body } => {
+            let value_emission = emit_full(value, var_types)?;
+            let mut new_var_types = var_types.clone();
+            new_var_types.insert(name.clone(), value_emission.typ);
+            let mut body_emission = emit_full(body, &new_var_types)?;
+
+            let mut statements = value_emission.statements;
+            statements.push(format!(
+                "let {}: {} = {};",
+                name,
+                type_to_wgsl(value_emission.typ),
+                value_emission.expr
+            ));
+            statements.append(&mut body_emission.statements);
+
+            Ok(Emission::with_statements(
+                statements,
+                body_emission.expr,
+                body_emission.typ,
             ))
+        }
+        _ => {
+            let result = emit_wgsl(ast, var_types)?;
+            Ok(Emission::expr_only(result.code, result.typ))
         }
     }
 }
@@ -517,5 +615,33 @@ mod tests {
         let result = emit("exp(z)", &[("z", Type::Complex)]).unwrap();
         assert_eq!(result.typ, Type::Complex);
         assert!(result.code.contains("cos") && result.code.contains("sin"));
+    }
+
+    #[test]
+    fn test_let_in_fn() {
+        let expr = Expr::parse("let w = z * z; w + z").unwrap();
+        let code = emit_wgsl_fn(
+            "square_add",
+            expr.ast(),
+            &[("z", Type::Complex)],
+            Type::Complex,
+        )
+        .unwrap();
+        assert!(code.contains("let w: vec2<f32> ="));
+        assert!(code.contains("return"));
+    }
+
+    #[test]
+    fn test_nested_let() {
+        let expr = Expr::parse("let a = z; let b = conj(a); a * b").unwrap();
+        let code = emit_wgsl_fn(
+            "norm_squared",
+            expr.ast(),
+            &[("z", Type::Complex)],
+            Type::Complex,
+        )
+        .unwrap();
+        assert!(code.contains("let a: vec2<f32> = z;"));
+        assert!(code.contains("let b: vec2<f32> ="));
     }
 }

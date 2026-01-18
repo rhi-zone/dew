@@ -62,6 +62,31 @@ pub struct GlslExpr {
     pub typ: Type,
 }
 
+/// Result of emitting code with statement support.
+struct Emission {
+    statements: Vec<String>,
+    expr: String,
+    typ: Type,
+}
+
+impl Emission {
+    fn expr_only(expr: String, typ: Type) -> Self {
+        Self {
+            statements: vec![],
+            expr,
+            typ,
+        }
+    }
+
+    fn with_statements(statements: Vec<String>, expr: String, typ: Type) -> Self {
+        Self {
+            statements,
+            expr,
+            typ,
+        }
+    }
+}
+
 /// Emit GLSL code for an AST with type propagation.
 pub fn emit_glsl(ast: &Ast, var_types: &HashMap<String, Type>) -> Result<GlslExpr, GlslError> {
     match ast {
@@ -167,11 +192,84 @@ pub fn emit_glsl(ast: &Ast, var_types: &HashMap<String, Type>) -> Result<GlslExp
         }
 
         Ast::Let { .. } => {
-            // Let bindings require statement-based codegen.
-            // Use the LetInlining optimization pass before emitting.
-            Err(GlslError::UnsupportedFeature(
-                "let bindings (use LetInlining pass first)".to_string(),
+            // Let in expression context: delegate to emit_full
+            let emission = emit_full(ast, var_types)?;
+            if emission.statements.is_empty() {
+                Ok(GlslExpr {
+                    code: emission.expr,
+                    typ: emission.typ,
+                })
+            } else {
+                Err(GlslError::UnsupportedFeature(
+                    "let in expression position (use emit_glsl_fn for full support)".to_string(),
+                ))
+            }
+        }
+    }
+}
+
+/// Emit a complete GLSL function with let statement support.
+pub fn emit_glsl_fn(
+    name: &str,
+    ast: &Ast,
+    params: &[(&str, Type)],
+    return_type: Type,
+) -> Result<String, GlslError> {
+    let var_types: HashMap<String, Type> =
+        params.iter().map(|(n, t)| (n.to_string(), *t)).collect();
+    let emission = emit_full(ast, &var_types)?;
+
+    let param_list: Vec<String> = params
+        .iter()
+        .map(|(n, t)| format!("{} {}", type_to_glsl(*t), n))
+        .collect();
+
+    let mut body = String::new();
+    for stmt in emission.statements {
+        body.push_str("    ");
+        body.push_str(&stmt);
+        body.push('\n');
+    }
+    body.push_str("    return ");
+    body.push_str(&emission.expr);
+    body.push(';');
+
+    Ok(format!(
+        "{} {}({}) {{\n{}\n}}",
+        type_to_glsl(return_type),
+        name,
+        param_list.join(", "),
+        body
+    ))
+}
+
+/// Emit with full statement support for let bindings.
+fn emit_full(ast: &Ast, var_types: &HashMap<String, Type>) -> Result<Emission, GlslError> {
+    match ast {
+        Ast::Let { name, value, body } => {
+            let value_emission = emit_full(value, var_types)?;
+            let mut new_var_types = var_types.clone();
+            new_var_types.insert(name.clone(), value_emission.typ);
+            let mut body_emission = emit_full(body, &new_var_types)?;
+
+            let mut statements = value_emission.statements;
+            statements.push(format!(
+                "{} {} = {};",
+                type_to_glsl(value_emission.typ),
+                name,
+                value_emission.expr
+            ));
+            statements.append(&mut body_emission.statements);
+
+            Ok(Emission::with_statements(
+                statements,
+                body_emission.expr,
+                body_emission.typ,
             ))
+        }
+        _ => {
+            let result = emit_glsl(ast, var_types)?;
+            Ok(Emission::expr_only(result.code, result.typ))
         }
     }
 }
@@ -520,5 +618,33 @@ mod tests {
         let result = emit("exp(z)", &[("z", Type::Complex)]).unwrap();
         assert_eq!(result.typ, Type::Complex);
         assert!(result.code.contains("cos") && result.code.contains("sin"));
+    }
+
+    #[test]
+    fn test_let_in_fn() {
+        let expr = Expr::parse("let w = z * z; w + z").unwrap();
+        let code = emit_glsl_fn(
+            "square_add",
+            expr.ast(),
+            &[("z", Type::Complex)],
+            Type::Complex,
+        )
+        .unwrap();
+        assert!(code.contains("vec2 w ="));
+        assert!(code.contains("return"));
+    }
+
+    #[test]
+    fn test_nested_let() {
+        let expr = Expr::parse("let a = z; let b = conj(a); a * b").unwrap();
+        let code = emit_glsl_fn(
+            "norm_squared",
+            expr.ast(),
+            &[("z", Type::Complex)],
+            Type::Complex,
+        )
+        .unwrap();
+        assert!(code.contains("vec2 a = z;"));
+        assert!(code.contains("vec2 b ="));
     }
 }
