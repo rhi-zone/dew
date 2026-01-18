@@ -41,6 +41,7 @@
             # WASM tooling
             wasm-pack
             wasm-bindgen-cli
+            lld
           ];
           LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath buildInputs}:$LD_LIBRARY_PATH";
         };
