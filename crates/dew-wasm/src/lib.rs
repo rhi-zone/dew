@@ -43,6 +43,22 @@ pub struct JsCodeResult {
     error: Option<String>,
 }
 
+fn code_ok(code: String) -> JsCodeResult {
+    JsCodeResult {
+        ok: true,
+        code: Some(code),
+        error: None,
+    }
+}
+
+fn code_err(error: String) -> JsCodeResult {
+    JsCodeResult {
+        ok: false,
+        code: None,
+        error: Some(error),
+    }
+}
+
 /// Parse a dew expression and return the AST as a JavaScript object.
 #[wasm_bindgen]
 pub fn parse(input: &str) -> JsValue {
@@ -124,88 +140,349 @@ fn ast_to_js(ast: &rhizome_dew_core::Ast) -> JsAstNode {
     }
 }
 
-/// Generate WGSL code from an expression.
-#[wasm_bindgen]
-pub fn emit_wgsl(input: &str) -> JsValue {
-    use rhizome_dew_scalar::wgsl;
+// =============================================================================
+// Scalar backends (always available with "core" feature)
+// =============================================================================
 
-    let result = match Expr::parse(input) {
-        Ok(expr) => match wgsl::emit_wgsl(expr.ast()) {
-            Ok(wgsl_expr) => JsCodeResult {
-                ok: true,
-                code: Some(wgsl_expr.code),
-                error: None,
-            },
-            Err(e) => JsCodeResult {
-                ok: false,
-                code: None,
-                error: Some(e.to_string()),
-            },
-        },
-        Err(e) => JsCodeResult {
-            ok: false,
-            code: None,
-            error: Some(e.to_string()),
-        },
-    };
+#[cfg(feature = "rhizome-dew-scalar")]
+mod scalar {
+    use super::*;
 
-    serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    /// Generate WGSL code from a scalar expression.
+    #[wasm_bindgen]
+    pub fn emit_wgsl(input: &str) -> JsValue {
+        use rhizome_dew_scalar::wgsl;
+
+        let result = match Expr::parse(input) {
+            Ok(expr) => match wgsl::emit_wgsl(expr.ast()) {
+                Ok(wgsl_expr) => code_ok(wgsl_expr.code),
+                Err(e) => code_err(e.to_string()),
+            },
+            Err(e) => code_err(e.to_string()),
+        };
+
+        serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    }
+
+    /// Generate GLSL code from a scalar expression.
+    #[wasm_bindgen]
+    pub fn emit_glsl(input: &str) -> JsValue {
+        use rhizome_dew_scalar::glsl;
+
+        let result = match Expr::parse(input) {
+            Ok(expr) => match glsl::emit_glsl(expr.ast()) {
+                Ok(glsl_expr) => code_ok(glsl_expr.code),
+                Err(e) => code_err(e.to_string()),
+            },
+            Err(e) => code_err(e.to_string()),
+        };
+
+        serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    }
+
+    /// Generate Lua code from a scalar expression.
+    #[wasm_bindgen]
+    pub fn emit_lua(input: &str) -> JsValue {
+        use rhizome_dew_scalar::lua;
+
+        let result = match Expr::parse(input) {
+            Ok(expr) => match lua::emit_lua(expr.ast()) {
+                Ok(lua_expr) => code_ok(lua_expr.code),
+                Err(e) => code_err(e.to_string()),
+            },
+            Err(e) => code_err(e.to_string()),
+        };
+
+        serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    }
 }
 
-/// Generate GLSL code from an expression.
-#[wasm_bindgen]
-pub fn emit_glsl(input: &str) -> JsValue {
-    use rhizome_dew_scalar::glsl;
+// =============================================================================
+// Linalg backends
+// =============================================================================
 
-    let result = match Expr::parse(input) {
-        Ok(expr) => match glsl::emit_glsl(expr.ast()) {
-            Ok(glsl_expr) => JsCodeResult {
-                ok: true,
-                code: Some(glsl_expr.code),
-                error: None,
-            },
-            Err(e) => JsCodeResult {
-                ok: false,
-                code: None,
-                error: Some(e.to_string()),
-            },
-        },
-        Err(e) => JsCodeResult {
-            ok: false,
-            code: None,
-            error: Some(e.to_string()),
-        },
-    };
+#[cfg(feature = "rhizome-dew-linalg")]
+mod linalg {
+    use super::*;
+    use rhizome_dew_linalg::Type;
+    use serde::Deserialize;
+    use std::collections::HashMap;
 
-    serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    #[derive(Deserialize)]
+    struct VarTypes(HashMap<String, String>);
+
+    fn parse_linalg_type(s: &str) -> Result<Type, String> {
+        match s {
+            "scalar" | "f32" | "float" => Ok(Type::Scalar),
+            "vec2" => Ok(Type::Vec2),
+            "vec3" => Ok(Type::Vec3),
+            "vec4" => Ok(Type::Vec4),
+            "mat2" => Ok(Type::Mat2),
+            "mat3" => Ok(Type::Mat3),
+            "mat4" => Ok(Type::Mat4),
+            _ => Err(format!("unknown linalg type: {s}")),
+        }
+    }
+
+    fn parse_var_types(js_types: JsValue) -> Result<HashMap<String, Type>, String> {
+        let var_types: VarTypes =
+            serde_wasm_bindgen::from_value(js_types).map_err(|e| e.to_string())?;
+
+        var_types
+            .0
+            .into_iter()
+            .map(|(name, type_str)| parse_linalg_type(&type_str).map(|t| (name, t)))
+            .collect()
+    }
+
+    /// Generate WGSL code from a linalg expression.
+    /// var_types: { "varName": "vec3", ... }
+    #[wasm_bindgen]
+    pub fn emit_wgsl_linalg(input: &str, var_types: JsValue) -> JsValue {
+        use rhizome_dew_linalg::wgsl;
+
+        let result = match parse_var_types(var_types) {
+            Ok(types) => match Expr::parse(input) {
+                Ok(expr) => match wgsl::emit_wgsl(expr.ast(), &types) {
+                    Ok(wgsl_expr) => code_ok(wgsl_expr.code),
+                    Err(e) => code_err(e.to_string()),
+                },
+                Err(e) => code_err(e.to_string()),
+            },
+            Err(e) => code_err(e),
+        };
+
+        serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    }
+
+    /// Generate GLSL code from a linalg expression.
+    /// var_types: { "varName": "vec3", ... }
+    #[wasm_bindgen]
+    pub fn emit_glsl_linalg(input: &str, var_types: JsValue) -> JsValue {
+        use rhizome_dew_linalg::glsl;
+
+        let result = match parse_var_types(var_types) {
+            Ok(types) => match Expr::parse(input) {
+                Ok(expr) => match glsl::emit_glsl(expr.ast(), &types) {
+                    Ok(glsl_expr) => code_ok(glsl_expr.code),
+                    Err(e) => code_err(e.to_string()),
+                },
+                Err(e) => code_err(e.to_string()),
+            },
+            Err(e) => code_err(e),
+        };
+
+        serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    }
+
+    /// Generate Lua code from a linalg expression.
+    /// var_types: { "varName": "vec3", ... }
+    #[wasm_bindgen]
+    pub fn emit_lua_linalg(input: &str, var_types: JsValue) -> JsValue {
+        use rhizome_dew_linalg::lua;
+
+        let result = match parse_var_types(var_types) {
+            Ok(types) => match Expr::parse(input) {
+                Ok(expr) => match lua::emit_lua(expr.ast(), &types) {
+                    Ok(lua_expr) => code_ok(lua_expr.code),
+                    Err(e) => code_err(e.to_string()),
+                },
+                Err(e) => code_err(e.to_string()),
+            },
+            Err(e) => code_err(e),
+        };
+
+        serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    }
 }
 
-/// Generate Lua code from an expression.
-#[wasm_bindgen]
-pub fn emit_lua(input: &str) -> JsValue {
-    use rhizome_dew_scalar::lua;
+// =============================================================================
+// Complex backends
+// =============================================================================
 
-    let result = match Expr::parse(input) {
-        Ok(expr) => match lua::emit_lua(expr.ast()) {
-            Ok(lua_expr) => JsCodeResult {
-                ok: true,
-                code: Some(lua_expr.code),
-                error: None,
-            },
-            Err(e) => JsCodeResult {
-                ok: false,
-                code: None,
-                error: Some(e.to_string()),
-            },
-        },
-        Err(e) => JsCodeResult {
-            ok: false,
-            code: None,
-            error: Some(e.to_string()),
-        },
-    };
+#[cfg(feature = "rhizome-dew-complex")]
+mod complex {
+    use super::*;
+    use rhizome_dew_complex::Type;
+    use serde::Deserialize;
+    use std::collections::HashMap;
 
-    serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    #[derive(Deserialize)]
+    struct VarTypes(HashMap<String, String>);
+
+    fn parse_complex_type(s: &str) -> Result<Type, String> {
+        match s {
+            "scalar" | "f32" | "float" | "real" => Ok(Type::Scalar),
+            "complex" | "c32" => Ok(Type::Complex),
+            _ => Err(format!("unknown complex type: {s}")),
+        }
+    }
+
+    fn parse_var_types(js_types: JsValue) -> Result<HashMap<String, Type>, String> {
+        let var_types: VarTypes =
+            serde_wasm_bindgen::from_value(js_types).map_err(|e| e.to_string())?;
+
+        var_types
+            .0
+            .into_iter()
+            .map(|(name, type_str)| parse_complex_type(&type_str).map(|t| (name, t)))
+            .collect()
+    }
+
+    /// Generate WGSL code from a complex expression.
+    /// var_types: { "z": "complex", "t": "scalar", ... }
+    #[wasm_bindgen]
+    pub fn emit_wgsl_complex(input: &str, var_types: JsValue) -> JsValue {
+        use rhizome_dew_complex::wgsl;
+
+        let result = match parse_var_types(var_types) {
+            Ok(types) => match Expr::parse(input) {
+                Ok(expr) => match wgsl::emit_wgsl(expr.ast(), &types) {
+                    Ok(wgsl_expr) => code_ok(wgsl_expr.code),
+                    Err(e) => code_err(e.to_string()),
+                },
+                Err(e) => code_err(e.to_string()),
+            },
+            Err(e) => code_err(e),
+        };
+
+        serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    }
+
+    /// Generate GLSL code from a complex expression.
+    /// var_types: { "z": "complex", "t": "scalar", ... }
+    #[wasm_bindgen]
+    pub fn emit_glsl_complex(input: &str, var_types: JsValue) -> JsValue {
+        use rhizome_dew_complex::glsl;
+
+        let result = match parse_var_types(var_types) {
+            Ok(types) => match Expr::parse(input) {
+                Ok(expr) => match glsl::emit_glsl(expr.ast(), &types) {
+                    Ok(glsl_expr) => code_ok(glsl_expr.code),
+                    Err(e) => code_err(e.to_string()),
+                },
+                Err(e) => code_err(e.to_string()),
+            },
+            Err(e) => code_err(e),
+        };
+
+        serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    }
+
+    /// Generate Lua code from a complex expression.
+    /// var_types: { "z": "complex", "t": "scalar", ... }
+    #[wasm_bindgen]
+    pub fn emit_lua_complex(input: &str, var_types: JsValue) -> JsValue {
+        use rhizome_dew_complex::lua;
+
+        let result = match parse_var_types(var_types) {
+            Ok(types) => match Expr::parse(input) {
+                Ok(expr) => match lua::emit_lua(expr.ast(), &types) {
+                    Ok(lua_expr) => code_ok(lua_expr.code),
+                    Err(e) => code_err(e.to_string()),
+                },
+                Err(e) => code_err(e.to_string()),
+            },
+            Err(e) => code_err(e),
+        };
+
+        serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    }
+}
+
+// =============================================================================
+// Quaternion backends
+// =============================================================================
+
+#[cfg(feature = "rhizome-dew-quaternion")]
+mod quaternion {
+    use super::*;
+    use rhizome_dew_quaternion::Type;
+    use serde::Deserialize;
+    use std::collections::HashMap;
+
+    #[derive(Deserialize)]
+    struct VarTypes(HashMap<String, String>);
+
+    fn parse_quaternion_type(s: &str) -> Result<Type, String> {
+        match s {
+            "scalar" | "f32" | "float" => Ok(Type::Scalar),
+            "vec3" => Ok(Type::Vec3),
+            "quaternion" | "quat" => Ok(Type::Quaternion),
+            _ => Err(format!("unknown quaternion type: {s}")),
+        }
+    }
+
+    fn parse_var_types(js_types: JsValue) -> Result<HashMap<String, Type>, String> {
+        let var_types: VarTypes =
+            serde_wasm_bindgen::from_value(js_types).map_err(|e| e.to_string())?;
+
+        var_types
+            .0
+            .into_iter()
+            .map(|(name, type_str)| parse_quaternion_type(&type_str).map(|t| (name, t)))
+            .collect()
+    }
+
+    /// Generate WGSL code from a quaternion expression.
+    /// var_types: { "q": "quaternion", "v": "vec3", ... }
+    #[wasm_bindgen]
+    pub fn emit_wgsl_quaternion(input: &str, var_types: JsValue) -> JsValue {
+        use rhizome_dew_quaternion::wgsl;
+
+        let result = match parse_var_types(var_types) {
+            Ok(types) => match Expr::parse(input) {
+                Ok(expr) => match wgsl::emit_wgsl(expr.ast(), &types) {
+                    Ok(wgsl_expr) => code_ok(wgsl_expr.code),
+                    Err(e) => code_err(e.to_string()),
+                },
+                Err(e) => code_err(e.to_string()),
+            },
+            Err(e) => code_err(e),
+        };
+
+        serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    }
+
+    /// Generate GLSL code from a quaternion expression.
+    /// var_types: { "q": "quaternion", "v": "vec3", ... }
+    #[wasm_bindgen]
+    pub fn emit_glsl_quaternion(input: &str, var_types: JsValue) -> JsValue {
+        use rhizome_dew_quaternion::glsl;
+
+        let result = match parse_var_types(var_types) {
+            Ok(types) => match Expr::parse(input) {
+                Ok(expr) => match glsl::emit_glsl(expr.ast(), &types) {
+                    Ok(glsl_expr) => code_ok(glsl_expr.code),
+                    Err(e) => code_err(e.to_string()),
+                },
+                Err(e) => code_err(e.to_string()),
+            },
+            Err(e) => code_err(e),
+        };
+
+        serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    }
+
+    /// Generate Lua code from a quaternion expression.
+    /// var_types: { "q": "quaternion", "v": "vec3", ... }
+    #[wasm_bindgen]
+    pub fn emit_lua_quaternion(input: &str, var_types: JsValue) -> JsValue {
+        use rhizome_dew_quaternion::lua;
+
+        let result = match parse_var_types(var_types) {
+            Ok(types) => match Expr::parse(input) {
+                Ok(expr) => match lua::emit_lua(expr.ast(), &types) {
+                    Ok(lua_expr) => code_ok(lua_expr.code),
+                    Err(e) => code_err(e.to_string()),
+                },
+                Err(e) => code_err(e.to_string()),
+            },
+            Err(e) => code_err(e),
+        };
+
+        serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
+    }
 }
 
 // Tests are run via wasm-bindgen-test in the browser or node environment
