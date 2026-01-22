@@ -10,7 +10,7 @@ rhizome-dew-core = "0.1"
 rhizome-dew-quaternion = "0.1"
 
 # Enable backends as needed
-rhizome-dew-quaternion = { version = "0.1", features = ["wgsl", "lua", "cranelift"] }
+rhizome-dew-quaternion = { version = "0.1", features = ["wgsl", "glsl", "lua", "cranelift"] }
 ```
 
 ## Basic Usage
@@ -229,4 +229,4 @@ let result: Value<f64> = eval(expr.ast(), &vars, &quaternion_registry()).unwrap(
 
 ## Backends
 
-See [WGSL](/backends/wgsl), [Lua](/backends/lua), [Cranelift](/backends/cranelift) for backend-specific usage.
+Available backends: WGSL, GLSL, Lua, Cranelift. Enable via feature flags.

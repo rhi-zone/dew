@@ -10,7 +10,7 @@ rhizome-dew-core = "0.1"
 rhizome-dew-linalg = "0.1"
 
 # Features
-rhizome-dew-linalg = { version = "0.1", features = ["3d", "4d", "wgsl"] }
+rhizome-dew-linalg = { version = "0.1", features = ["3d", "4d", "wgsl", "glsl"] }
 ```
 
 ### Features
@@ -20,6 +20,7 @@ rhizome-dew-linalg = { version = "0.1", features = ["3d", "4d", "wgsl"] }
 | `3d` | Vec3, Mat3 types | Yes |
 | `4d` | Vec4, Mat4 types | No |
 | `wgsl` | WGSL backend | No |
+| `glsl` | GLSL backend | No |
 | `lua` | Lua backend | No |
 | `cranelift` | Cranelift JIT backend | No |
 
@@ -178,4 +179,4 @@ let result: Value<i32> = eval(expr.ast(), &int_vars, &linalg_registry_int()).unw
 
 ## Backends
 
-See [WGSL](/backends/wgsl), [Lua](/backends/lua), [Cranelift](/backends/cranelift) for backend-specific usage.
+Available backends: WGSL, GLSL, Lua, Cranelift. Enable via feature flags.

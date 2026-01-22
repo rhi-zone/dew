@@ -1,6 +1,6 @@
 # Introduction
 
-Dew is a minimal expression language that compiles to multiple backends. Parse once, emit to WGSL (GPU shaders), Cranelift (native JIT), or Lua (scripting).
+Dew is a minimal expression language that compiles to multiple backends. Parse once, emit to WGSL/GLSL (GPU shaders), Cranelift (native JIT), or Lua (scripting).
 
 Part of the [Rhizome](https://rhizome-lab.github.io) ecosystem.
 
@@ -20,7 +20,7 @@ dew-core               # Syntax only: AST, parsing
     +-- dew-quaternion # Quaternions: [x, y, z, w], Vec3
 ```
 
-All domain crates have WGSL, Lua, and Cranelift backends (feature flags).
+All domain crates have WGSL, GLSL, Lua, and Cranelift backends (feature flags).
 
 **Core = syntax only, domains = semantics.** Each domain crate has its own:
 - Value types and type system
@@ -77,19 +77,20 @@ let result = eval(expr.ast(), &vars, &scalar_registry()).unwrap();
 
 ## Backends
 
-Each domain crate includes three backends as optional features:
+Each domain crate includes four backends as optional features:
 
 | Backend | Feature | Use case |
 |---------|---------|----------|
 | WGSL | `wgsl` | GPU shaders (WebGPU) |
-| Lua | `lua` | Scripting, hot-reload |
+| GLSL | `glsl` | GPU shaders (OpenGL/Vulkan) |
+| Lua | `lua` | Scripting, hot-reload (includes `lua-codegen` for WASM) |
 | Cranelift | `cranelift` | Native JIT compilation |
 
 Enable in `Cargo.toml`:
 
 ```toml
 [dependencies]
-rhizome-dew-scalar = { version = "0.1", features = ["wgsl", "lua", "cranelift"] }
+rhizome-dew-scalar = { version = "0.1", features = ["wgsl", "glsl", "lua", "cranelift"] }
 ```
 
 ## Crates
