@@ -31,6 +31,8 @@ export default withMermaid(
             text: 'Guide',
             items: [
               { text: 'Introduction', link: '/introduction' },
+              { text: 'Use Cases', link: '/use-cases' },
+              { text: 'Integration', link: '/integration' },
               { text: 'Optimization', link: '/optimization' },
             ]
           },
@@ -48,8 +50,15 @@ export default withMermaid(
             text: 'Backends',
             items: [
               { text: 'WGSL', link: '/backends/wgsl' },
+              { text: 'GLSL', link: '/backends/glsl' },
               { text: 'Lua', link: '/backends/lua' },
               { text: 'Cranelift', link: '/backends/cranelift' },
+            ]
+          },
+          {
+            text: 'Reference',
+            items: [
+              { text: 'API Reference', link: '/api-reference' },
             ]
           },
         ]
