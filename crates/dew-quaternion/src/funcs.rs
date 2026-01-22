@@ -519,9 +519,7 @@ where
 }
 
 /// Create a new registry with all standard quaternion functions.
-pub fn quaternion_registry<T: Float + 'static>() -> FunctionRegistry<T, Value<T>>
-where
-    T: std::fmt::Debug,
+pub fn quaternion_registry<T: Float + std::fmt::Debug + 'static>() -> FunctionRegistry<T, Value<T>>
 {
     let mut registry = FunctionRegistry::new();
     register_quaternion(&mut registry);

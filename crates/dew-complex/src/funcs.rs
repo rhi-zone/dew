@@ -483,10 +483,7 @@ where
 }
 
 /// Create a new registry with all standard complex functions.
-pub fn complex_registry<T: Float + 'static>() -> FunctionRegistry<T, Value<T>>
-where
-    T: std::fmt::Debug,
-{
+pub fn complex_registry<T: Float + std::fmt::Debug + 'static>() -> FunctionRegistry<T, Value<T>> {
     let mut registry = FunctionRegistry::new();
     register_complex(&mut registry);
     registry

@@ -392,7 +392,7 @@ pub fn eval_int<T: PrimInt + NumCast>(
             if n.fract() != 0.0 {
                 return Err(Error::InvalidLiteral(*n));
             }
-            T::from(*n).ok_or_else(|| Error::InvalidLiteral(*n))
+            T::from(*n).ok_or(Error::InvalidLiteral(*n))
         }
 
         Ast::Var(name) => vars

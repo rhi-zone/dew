@@ -125,7 +125,7 @@ impl ConstValue {
     /// Try to interpret an AST as a constant value.
     fn from_ast(ast: &Ast) -> Option<Self> {
         match ast {
-            Ast::Num(n) => Some(ConstValue::Scalar(*n as f64)),
+            Ast::Num(n) => Some(ConstValue::Scalar(*n)),
 
             Ast::Call(name, args) => match (name.as_str(), args.len()) {
                 ("vec2", 2) => {
@@ -158,7 +158,7 @@ impl ConstValue {
     /// Helper to extract a scalar from an AST.
     fn as_scalar(ast: &Ast) -> Option<f64> {
         match ast {
-            Ast::Num(n) => Some(*n as f64),
+            Ast::Num(n) => Some(*n),
             _ => None,
         }
     }

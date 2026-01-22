@@ -450,12 +450,11 @@ impl Pass for AlgebraicIdentities {
                     return Some(Ast::Num(1.0));
                 }
                 // 0 ^ x = 0 (for x > 0)
-                if Self::is_zero(left) {
-                    if let Ast::Num(n) = right.as_ref() {
-                        if *n > 0.0 {
-                            return Some(Ast::Num(0.0));
-                        }
-                    }
+                if Self::is_zero(left)
+                    && let Ast::Num(n) = right.as_ref()
+                    && *n > 0.0
+                {
+                    return Some(Ast::Num(0.0));
                 }
                 None
             }
@@ -485,10 +484,10 @@ impl Pass for AlgebraicIdentities {
                     return Some(Ast::Num(0.0));
                 }
                 // 1 and x = x (truthy, result depends on x)
-                if let Ast::Num(n) = left.as_ref() {
-                    if *n != 0.0 {
-                        return Some(right.as_ref().clone());
-                    }
+                if let Ast::Num(n) = left.as_ref()
+                    && *n != 0.0
+                {
+                    return Some(right.as_ref().clone());
                 }
                 None
             }
@@ -497,10 +496,10 @@ impl Pass for AlgebraicIdentities {
             #[cfg(feature = "cond")]
             Ast::Or(left, right) => {
                 // 1 or x = 1 (truthy)
-                if let Ast::Num(n) = left.as_ref() {
-                    if *n != 0.0 {
-                        return Some(Ast::Num(1.0));
-                    }
+                if let Ast::Num(n) = left.as_ref()
+                    && *n != 0.0
+                {
+                    return Some(Ast::Num(1.0));
                 }
                 // 0 or x = x
                 if Self::is_zero(left) {
@@ -531,32 +530,32 @@ pub struct PowerReduction;
 
 impl Pass for PowerReduction {
     fn transform(&self, ast: &Ast) -> Option<Ast> {
-        if let Ast::BinOp(BinOp::Pow, base, exp) = ast {
-            if let Ast::Num(n) = exp.as_ref() {
-                let n_int = *n as i32;
-                // Only reduce small integer powers
-                if (*n - n_int as f64).abs() < f64::EPSILON {
-                    match n_int {
-                        2 => {
-                            return Some(Ast::BinOp(BinOp::Mul, base.clone(), base.clone()));
-                        }
-                        3 => {
-                            return Some(Ast::BinOp(
-                                BinOp::Mul,
-                                Box::new(Ast::BinOp(BinOp::Mul, base.clone(), base.clone())),
-                                base.clone(),
-                            ));
-                        }
-                        4 => {
-                            let squared = Ast::BinOp(BinOp::Mul, base.clone(), base.clone());
-                            return Some(Ast::BinOp(
-                                BinOp::Mul,
-                                Box::new(squared.clone()),
-                                Box::new(squared),
-                            ));
-                        }
-                        _ => {}
+        if let Ast::BinOp(BinOp::Pow, base, exp) = ast
+            && let Ast::Num(n) = exp.as_ref()
+        {
+            let n_int = *n as i32;
+            // Only reduce small integer powers
+            if (*n - n_int as f64).abs() < f64::EPSILON {
+                match n_int {
+                    2 => {
+                        return Some(Ast::BinOp(BinOp::Mul, base.clone(), base.clone()));
                     }
+                    3 => {
+                        return Some(Ast::BinOp(
+                            BinOp::Mul,
+                            Box::new(Ast::BinOp(BinOp::Mul, base.clone(), base.clone())),
+                            base.clone(),
+                        ));
+                    }
+                    4 => {
+                        let squared = Ast::BinOp(BinOp::Mul, base.clone(), base.clone());
+                        return Some(Ast::BinOp(
+                            BinOp::Mul,
+                            Box::new(squared.clone()),
+                            Box::new(squared),
+                        ));
+                    }
+                    _ => {}
                 }
             }
         }
@@ -768,10 +767,10 @@ impl<'a> FunctionDecomposition<'a> {
 #[cfg(feature = "func")]
 impl Pass for FunctionDecomposition<'_> {
     fn transform(&self, ast: &Ast) -> Option<Ast> {
-        if let Ast::Call(name, args) = ast {
-            if let Some(func) = self.registry.get(name) {
-                return func.decompose(args);
-            }
+        if let Ast::Call(name, args) = ast
+            && let Some(func) = self.registry.get(name)
+        {
+            return func.decompose(args);
         }
         None
     }
