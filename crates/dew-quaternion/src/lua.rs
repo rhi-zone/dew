@@ -702,6 +702,9 @@ impl From<LuaError> for EvalError {
     }
 }
 
+#[cfg(feature = "lua")]
+use crate::Value;
+
 /// Evaluate an expression using Lua.
 ///
 /// This creates a Lua VM, sets up variables, emits the expression as Lua code,
@@ -747,21 +750,21 @@ fn set_lua_var<T: num_traits::Float + mlua::IntoLua>(
     let globals = lua.globals();
     match value {
         Value::Scalar(s) => {
-            globals.set(name, s.clone())?;
+            globals.set(name, *s)?;
         }
         Value::Vec3(v) => {
             let table = lua.create_table()?;
-            table.set(1, v[0].clone())?;
-            table.set(2, v[1].clone())?;
-            table.set(3, v[2].clone())?;
+            table.set(1, v[0])?;
+            table.set(2, v[1])?;
+            table.set(3, v[2])?;
             globals.set(name, table)?;
         }
         Value::Quaternion(q) => {
             let table = lua.create_table()?;
-            table.set(1, q[0].clone())?;
-            table.set(2, q[1].clone())?;
-            table.set(3, q[2].clone())?;
-            table.set(4, q[3].clone())?;
+            table.set(1, q[0])?;
+            table.set(2, q[1])?;
+            table.set(3, q[2])?;
+            table.set(4, q[3])?;
             globals.set(name, table)?;
         }
     }
