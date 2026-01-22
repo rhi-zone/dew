@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Dew
   text: Minimal Expression Language
-  tagline: Parse once, compile to WGSL, Cranelift, or Lua
+  tagline: Parse once, compile to WGSL, GLSL, Cranelift, or Lua
   actions:
     - theme: brand
       text: Get Started
@@ -17,7 +17,7 @@ features:
   - title: Domain Crates
     details: Scalar math, linear algebra, complex numbers, quaternions
   - title: Multiple Backends
-    details: WGSL (GPU shaders), Cranelift (JIT), Lua (scripting)
+    details: WGSL/GLSL (GPU shaders), Cranelift (JIT), Lua (scripting)
   - title: Expression Optimization
     details: Constant folding, algebraic simplification, power reduction
   - title: Composable

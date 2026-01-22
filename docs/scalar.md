@@ -10,7 +10,7 @@ rhizome-dew-core = "0.1"
 rhizome-dew-scalar = "0.1"
 
 # Enable backends as needed
-rhizome-dew-scalar = { version = "0.1", features = ["wgsl", "lua", "cranelift"] }
+rhizome-dew-scalar = { version = "0.1", features = ["wgsl", "glsl", "lua", "cranelift"] }
 ```
 
 ## Basic Usage
@@ -142,4 +142,4 @@ let result_i64: i64 = eval::<i64>(expr.ast(), &vars_i64, &scalar_registry_int())
 
 ## Backends
 
-See [WGSL](/backends/wgsl), [Lua](/backends/lua), [Cranelift](/backends/cranelift) for backend-specific usage.
+Available backends: WGSL, GLSL, Lua, Cranelift. Enable via feature flags.
