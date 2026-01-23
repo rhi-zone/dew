@@ -43,6 +43,12 @@ opencl = [
     "rhizome-dew-complex?/opencl",
     "rhizome-dew-quaternion?/opencl",
 ]
+cuda = [
+    "rhizome-dew-scalar?/cuda",
+    "rhizome-dew-linalg?/cuda",
+    "rhizome-dew-complex?/cuda",
+    "rhizome-dew-quaternion?/cuda",
+]
 tokenstream = [
     "rhizome-dew-scalar?/tokenstream",
     "rhizome-dew-linalg?/tokenstream",

@@ -12,12 +12,13 @@ glsl = ["rhizome-dew-cond/glsl"]
 rust = ["rhizome-dew-cond/rust"]  # Rust text codegen
 c = ["rhizome-dew-cond/c"]        # C text codegen
 opencl = ["rhizome-dew-cond/opencl"]  # OpenCL kernel codegen
+cuda = ["rhizome-dew-cond/cuda"]      # CUDA kernel codegen
 tokenstream = ["rhizome-dew-cond/tokenstream", "quote", "proc-macro2"]  # TokenStream codegen for proc-macros
 lua-codegen = ["rhizome-dew-cond/lua-codegen"]  # Pure Rust codegen, WASM-compatible
 lua = ["lua-codegen", "mlua"]                    # Full Lua with execution via mlua
 cranelift = ["cranelift-codegen", "cranelift-frontend", "cranelift-jit", "cranelift-module", "rhizome-dew-cond/cranelift"]
 optimize = ["rhizome-dew-core/optimize"]  # Expression optimization passes
-all = ["wgsl", "glsl", "rust", "c", "opencl", "tokenstream", "lua", "cranelift"]
+all = ["wgsl", "glsl", "rust", "c", "opencl", "cuda", "tokenstream", "lua", "cranelift"]
 
 [dependencies]
 rhizome-dew-core = { workspace = true, features = ["func"] }
