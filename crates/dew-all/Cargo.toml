@@ -49,6 +49,12 @@ cuda = [
     "rhizome-dew-complex?/cuda",
     "rhizome-dew-quaternion?/cuda",
 ]
+hip = [
+    "rhizome-dew-scalar?/hip",
+    "rhizome-dew-linalg?/hip",
+    "rhizome-dew-complex?/hip",
+    "rhizome-dew-quaternion?/hip",
+]
 tokenstream = [
     "rhizome-dew-scalar?/tokenstream",
     "rhizome-dew-linalg?/tokenstream",
