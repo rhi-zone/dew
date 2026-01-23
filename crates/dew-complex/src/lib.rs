@@ -87,6 +87,9 @@ pub mod rust;
 #[cfg(feature = "c")]
 pub mod c;
 
+#[cfg(feature = "opencl")]
+pub mod opencl;
+
 #[cfg(feature = "tokenstream")]
 pub mod tokenstream;
 
