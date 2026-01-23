@@ -31,6 +31,12 @@ rust = [
     "rhizome-dew-complex?/rust",
     "rhizome-dew-quaternion?/rust",
 ]
+c = [
+    "rhizome-dew-scalar?/c",
+    "rhizome-dew-linalg?/c",
+    "rhizome-dew-complex?/c",
+    "rhizome-dew-quaternion?/c",
+]
 tokenstream = [
     "rhizome-dew-scalar?/tokenstream",
     "rhizome-dew-linalg?/tokenstream",

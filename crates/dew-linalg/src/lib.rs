@@ -90,6 +90,9 @@ pub mod glsl;
 #[cfg(feature = "rust")]
 pub mod rust;
 
+#[cfg(feature = "c")]
+pub mod c;
+
 #[cfg(feature = "tokenstream")]
 pub mod tokenstream;
 
