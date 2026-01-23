@@ -56,6 +56,7 @@ export default withMermaid(
               { text: 'HIP', link: '/backends/hip' },
               { text: 'Rust', link: '/backends/rust' },
               { text: 'C', link: '/backends/c' },
+              { text: 'TokenStream', link: '/backends/tokenstream' },
               { text: 'Lua', link: '/backends/lua' },
               { text: 'Cranelift', link: '/backends/cranelift' },
             ]

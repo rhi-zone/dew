@@ -20,7 +20,7 @@ dew-core               # Syntax only: AST, parsing
     +-- dew-quaternion # Quaternions: [x, y, z, w], Vec3
 ```
 
-All domain crates have multiple backends (feature flags): WGSL, GLSL, OpenCL, CUDA, HIP, Rust, C, Lua, and Cranelift.
+All domain crates have multiple backends (feature flags): WGSL, GLSL, OpenCL, CUDA, HIP, Rust, C, TokenStream, Lua, and Cranelift.
 
 **Core = syntax only, domains = semantics.** Each domain crate has its own:
 - Value types and type system
