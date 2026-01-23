@@ -112,6 +112,75 @@ via passthrough.
 - [x] mat3(9 scalars) -> Mat3
 - [x] mat4(16 scalars) -> Mat4
 
+## Codegen Target Overview
+
+> **Goal:** One AST, many backends - each optimized for different use cases.
+
+### Current Backends
+
+| Backend | When | Use Case | Status |
+|---------|------|----------|--------|
+| **Interpreter** | Runtime | Debugging, fallback, prototyping | ✅ All domains |
+| **Cranelift JIT** | Runtime | Fast CPU execution, hot paths | ✅ All domains |
+| **WGSL** | Runtime | GPU compute shaders (wgpu) | ✅ All domains |
+| **GLSL** | Runtime | OpenGL shaders, broader GPU compat | ✅ All domains |
+| **Lua** | Runtime | Scripting, hot reload, embedding | ✅ All domains |
+
+### Planned Backends
+
+| Backend | When | Use Case | Notes |
+|---------|------|----------|-------|
+| **Rust text** | Build time | build.rs codegen, rustc optimizes further | See below |
+| **C** | Build time | FFI, embedding, maximum portability | Nearly identical to Rust |
+| **TokenStream** | Compile time | Proc-macro derives (`#[derive(CompiledExpr)]`) | See below |
+| **SPIR-V** | Compile/Runtime | Vulkan, pre-compiled shaders | Via rust-gpu or naga |
+| **Metal (MSL)** | Runtime | Apple GPU shaders (iOS/macOS) | C++-like syntax |
+| **HLSL** | Runtime | DirectX shaders | C-like, similar to GLSL |
+| **OpenCL** | Runtime | Cross-platform GPU/CPU compute | C-like, no native matrices |
+| **CUDA** | Runtime | NVIDIA GPU compute | C-like, `__device__` qualifiers |
+| **HIP** | Runtime | AMD GPU compute (CUDA-portable) | Nearly identical to CUDA |
+
+### Rust Codegen (AOT)
+
+> **Goal:** Generate Rust source from dew expressions for compile-time optimization.
+
+**Why Rust output?**
+- rustc optimizes further (LLVM backend)
+- No JIT overhead at runtime
+- Better debugging (source maps, breakpoints)
+- Build-time pattern recognition can emit fused implementations
+- Integrates with Rust toolchain (cargo, clippy, miri)
+
+**Outputs:**
+- [ ] `expr.to_rust_code() -> String` - text output for build.rs
+- [ ] `expr.to_tokens() -> TokenStream` - for proc-macros (feature-gated on `proc-macro2`)
+
+**Use cases in resin:**
+- build.rs generates optimized Field implementations
+- Pattern-matching optimizer runs at build time, emits fused code
+- `#[derive(CompiledField)]` on expression structs
+- Example: detect `fft → mask → ifft`, emit single fused function
+
+**Implementation approach:**
+- New `emit_rust()` function parallel to `emit_wgsl()`, `emit_lua()`
+- Map dew ops to Rust ops (mostly 1:1 for math)
+- Map dew functions to Rust stdlib or domain-specific impls
+- Handle type inference to emit typed Rust code
+
+**Example:**
+```rust
+// Input dew expression
+let expr = parse("sin(x * 3.14159) + cos(y * 2.0)");
+
+// Output Rust code
+expr.to_rust_code()
+// => "(x * 3.14159_f32).sin() + (y * 2.0_f32).cos()"
+
+// Or with context
+expr.to_rust_fn("sample", &[("x", "f32"), ("y", "f32")])
+// => "fn sample(x: f32, y: f32) -> f32 { (x * 3.14159_f32).sin() + (y * 2.0_f32).cos() }"
+```
+
 ## Future Work
 
 ### Domain Crate Composition (completed)
