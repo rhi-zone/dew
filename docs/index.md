@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Dew
   text: Minimal Expression Language
-  tagline: Parse once, compile to WGSL, GLSL, Cranelift, or Lua
+  tagline: Parse once, compile to WGSL, GLSL, C, Rust, Cranelift, or Lua
   actions:
     - theme: brand
       text: Get Started

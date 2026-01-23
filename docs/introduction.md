@@ -77,12 +77,15 @@ let result = eval(expr.ast(), &vars, &scalar_registry()).unwrap();
 
 ## Backends
 
-Each domain crate includes four backends as optional features:
+Each domain crate includes multiple backends as optional features:
 
 | Backend | Feature | Use case |
 |---------|---------|----------|
 | WGSL | `wgsl` | GPU shaders (WebGPU) |
 | GLSL | `glsl` | GPU shaders (OpenGL/Vulkan) |
+| Rust | `rust` | Rust source code generation |
+| C | `c` | C source code generation |
+| TokenStream | `tokenstream` | Proc-macro code generation |
 | Lua | `lua` | Scripting, hot-reload (includes `lua-codegen` for WASM) |
 | Cranelift | `cranelift` | Native JIT compilation |
 
@@ -92,6 +95,30 @@ Enable in `Cargo.toml`:
 [dependencies]
 rhizome-dew-scalar = { version = "0.1", features = ["wgsl", "glsl", "lua", "cranelift"] }
 ```
+
+### C Backend Limitations
+
+The C backend generates code that assumes external type and function definitions:
+
+**Required type definitions** (user-provided):
+- Scalars: `float` (standard C)
+- Vectors: `vec2`, `vec3`, `vec4` (structs with `.x`, `.y`, `.z`, `.w` fields)
+- Matrices: `mat2`, `mat3`, `mat4`
+- Complex: `complex_t` (struct with `.re`, `.im` fields)
+- Quaternions: `quat_t` (struct with `.x`, `.y`, `.z`, `.w` fields)
+
+**Required function definitions** (user-provided):
+- Vector ops: `vec2_add()`, `vec2_dot()`, `vec2_scale()`, `vec2_normalize()`, etc.
+- Matrix ops: `mat2_mul()`, `mat2_mul_vec2()`, etc.
+- Complex ops: `complex_mul()`, `complex_conj()`, `complex_exp()`, etc.
+- Quaternion ops: `quat_mul()`, `quat_slerp()`, `quat_from_axis_angle()`, etc.
+
+**What it uses from standard C**:
+- `<math.h>`: `sinf`, `cosf`, `tanf`, `expf`, `logf`, `sqrtf`, `fabsf`, `floorf`, `ceilf`, `fminf`, `fmaxf`, `powf`, `fmodf`, `atan2f`
+- Ternary operator for conditionals: `cond ? then : else`
+- Float literals with `f` suffix: `1.0f`, `3.14159f`
+
+The generated code is designed to be embedded in projects with existing math libraries (e.g., cglm, HandmadeMath, custom implementations). It provides the expression logic while you provide the type system.
 
 ## Crates
 

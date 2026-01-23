@@ -333,6 +333,53 @@ fn create_gl_shader(expr: &Ast, var_types: &HashMap<String, Type>) -> String {
 }
 ```
 
+### C Code Generation
+
+The C backend generates code for embedding in C/C++ projects with custom math libraries.
+
+```rust
+use rhizome_dew_linalg::{emit_c, emit_c_fn, Type};
+
+// Generate inline expression
+let expr = Expr::parse("dot(a, b) + length(c)").unwrap();
+let var_types = [
+    ("a".to_string(), Type::Vec3),
+    ("b".to_string(), Type::Vec3),
+    ("c".to_string(), Type::Vec3),
+].into();
+
+let c_expr = emit_c(expr.ast(), &var_types).unwrap();
+// c_expr.code = "(vec3_dot(a, b) + vec3_length(c))"
+
+// Generate complete function
+let func = emit_c_fn(
+    "compute_value",
+    expr.ast(),
+    &[("a", Type::Vec3), ("b", Type::Vec3), ("c", Type::Vec3)],
+    Type::Scalar,
+).unwrap();
+// float compute_value(vec3 a, vec3 b, vec3 c) {
+//     return (vec3_dot(a, b) + vec3_length(c));
+// }
+```
+
+**Example header for generated code:**
+```c
+// mymath.h - User provides these definitions
+typedef struct { float x, y, z; } vec3;
+
+vec3 vec3_add(vec3 a, vec3 b);
+vec3 vec3_sub(vec3 a, vec3 b);
+vec3 vec3_scale(vec3 v, float s);
+float vec3_dot(vec3 a, vec3 b);
+float vec3_length(vec3 v);
+vec3 vec3_normalize(vec3 v);
+vec3 vec3_cross(vec3 a, vec3 b);
+
+// Generated Dew code uses these functions
+#include "generated_expressions.c"
+```
+
 ## Audio Processing
 
 ### CPAL Integration
