@@ -18,6 +18,12 @@ Functions + numeric values, compiled to multiple backends (WGSL, Cranelift, Lua)
 
 Backends (wgsl, lua, cranelift) are feature flags within each domain crate.
 
+## Publishing
+
+**Published on [crates.io](https://crates.io/crates/wick-core)** as 7 crates: `wick-core`, `wick-cond`, `wick-scalar`, `wick-linalg`, `wick-complex`, `wick-quaternion`, `wick-all`. All at v0.1.0 (early, in active development). The `dew-wasm` crate is `publish = false` (wasm-pack target).
+
+Note: The old `rhizome-dew-*` names (v0.1.0) were published and immediately yanked. The canonical crate names are `wick-*`.
+
 ## Core Rule
 
 **Keep docs in sync:** When adding crates or features, update README.md and docs/.
