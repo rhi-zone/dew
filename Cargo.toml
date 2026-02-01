@@ -10,13 +10,13 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/rhi-zone/dew"
 
 [workspace.dependencies]
-rhizome-dew-core = { path = "crates/dew-core" }
-rhizome-dew-cond = { path = "crates/dew-cond" }
-rhizome-dew-scalar = { path = "crates/dew-scalar" }
-rhizome-dew-linalg = { path = "crates/dew-linalg" }
-rhizome-dew-complex = { path = "crates/dew-complex" }
-rhizome-dew-quaternion = { path = "crates/dew-quaternion" }
-rhizome-dew-all = { path = "crates/dew-all" }
+rhizome-dew-core = { path = "crates/dew-core", version = "0.1.0" }
+rhizome-dew-cond = { path = "crates/dew-cond", version = "0.1.0" }
+rhizome-dew-scalar = { path = "crates/dew-scalar", version = "0.1.0" }
+rhizome-dew-linalg = { path = "crates/dew-linalg", version = "0.1.0" }
+rhizome-dew-complex = { path = "crates/dew-complex", version = "0.1.0" }
+rhizome-dew-quaternion = { path = "crates/dew-quaternion", version = "0.1.0" }
+rhizome-dew-all = { path = "crates/dew-all", version = "0.1.0" }
 
 # Root package for examples
 [package]
