@@ -5,8 +5,8 @@ Generate C source code from dew expressions.
 ## Enable
 
 ```toml
-rhizome-dew-scalar = { version = "0.1", features = ["c"] }
-rhizome-dew-linalg = { version = "0.1", features = ["c"] }
+wick-scalar = { version = "0.1", features = ["c"] }
+wick-linalg = { version = "0.1", features = ["c"] }
 ```
 
 ## dew-scalar
@@ -14,8 +14,8 @@ rhizome-dew-linalg = { version = "0.1", features = ["c"] }
 ### Generate Expression
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::c::emit_c;
+use wick_core::Expr;
+use wick_scalar::c::emit_c;
 
 let expr = Expr::parse("sin(x) + cos(y)").unwrap();
 let c = emit_c(expr.ast()).unwrap();
@@ -27,7 +27,7 @@ println!("{}", c.code);
 ### Generate Function
 
 ```rust
-use rhizome_dew_scalar::c::emit_c_fn;
+use wick_scalar::c::emit_c_fn;
 
 let expr = Expr::parse("x * x + y * y").unwrap();
 let c = emit_c_fn("distance_squared", expr.ast(), &["x", "y"]).unwrap();

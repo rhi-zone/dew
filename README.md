@@ -12,12 +12,12 @@ Dew is a minimal expression language that compiles to multiple backends. Small, 
 
 | Crate | Description |
 |-------|-------------|
-| `rhizome-dew-core` | Core AST and parsing (feature-gated conditionals and functions) |
-| `rhizome-dew-cond` | Conditional backend helpers for domain crates |
-| `rhizome-dew-scalar` | Scalar math: sin, cos, exp, lerp, etc. |
-| `rhizome-dew-linalg` | Linear algebra: Vec2-4, Mat2-4, dot, cross, etc. |
-| `rhizome-dew-complex` | Complex numbers: exp, log, polar, conjugate, etc. |
-| `rhizome-dew-quaternion` | Quaternions: rotation, slerp, axis-angle, etc. |
+| `wick-core` | Core AST and parsing (feature-gated conditionals and functions) |
+| `wick-cond` | Conditional backend helpers for domain crates |
+| `wick-scalar` | Scalar math: sin, cos, exp, lerp, etc. |
+| `wick-linalg` | Linear algebra: Vec2-4, Mat2-4, dot, cross, etc. |
+| `wick-complex` | Complex numbers: exp, log, polar, conjugate, etc. |
+| `wick-quaternion` | Quaternions: rotation, slerp, axis-angle, etc. |
 
 Each domain crate includes self-contained backends (feature flags):
 

@@ -6,8 +6,8 @@
 //! # Example
 //!
 //! ```
-//! use rhizome_dew_core::{Expr, Ast, BinOp};
-//! use rhizome_dew_core::optimize::{optimize, standard_passes};
+//! use wick_core::{Expr, Ast, BinOp};
+//! use wick_core::optimize::{optimize, standard_passes};
 //!
 //! let expr = Expr::parse("1 + 2 + x").unwrap();
 //! let optimized = optimize(expr.ast().clone(), &standard_passes());
@@ -51,8 +51,8 @@ use crate::FunctionRegistry;
 /// # Example
 ///
 /// ```
-/// use rhizome_dew_core::{Ast, BinOp};
-/// use rhizome_dew_core::optimize::Pass;
+/// use wick_core::{Ast, BinOp};
+/// use wick_core::optimize::Pass;
 ///
 /// struct DoubleToAdd;
 ///
@@ -91,8 +91,8 @@ pub trait Pass: Send + Sync {
 /// # Example
 ///
 /// ```
-/// use rhizome_dew_core::{Expr, Ast};
-/// use rhizome_dew_core::optimize::{optimize, standard_passes};
+/// use wick_core::{Expr, Ast};
+/// use wick_core::optimize::{optimize, standard_passes};
 ///
 /// let expr = Expr::parse("(1 + 2) * x + 0").unwrap();
 /// let optimized = optimize(expr.ast().clone(), &standard_passes());
@@ -206,7 +206,7 @@ pub fn standard_passes() -> Vec<&'static dyn Pass> {
 /// # Example
 ///
 /// ```ignore
-/// use rhizome_dew_core::optimize::{optimize, standard_passes_with_funcs};
+/// use wick_core::optimize::{optimize, standard_passes_with_funcs};
 ///
 /// let registry = /* your function registry */;
 /// let passes = standard_passes_with_funcs(&registry);
@@ -788,8 +788,8 @@ impl Pass for FunctionDecomposition<'_> {
 /// # Example
 ///
 /// ```
-/// use rhizome_dew_core::{Ast, BinOp};
-/// use rhizome_dew_core::optimize::AstHasher;
+/// use wick_core::{Ast, BinOp};
+/// use wick_core::optimize::AstHasher;
 ///
 /// let ast1 = Ast::BinOp(BinOp::Add, Box::new(Ast::Var("x".into())), Box::new(Ast::Num(1.0)));
 /// let ast2 = Ast::BinOp(BinOp::Add, Box::new(Ast::Var("x".into())), Box::new(Ast::Num(1.0)));

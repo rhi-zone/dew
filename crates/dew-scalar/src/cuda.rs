@@ -3,8 +3,8 @@
 //! Compiles expression ASTs to CUDA source code.
 //! Uses CUDA math functions (sinf, cosf, etc.) and standard float literals.
 
-use rhizome_dew_cond::cuda as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
+use wick_cond::cuda as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// CUDA emission error.
 #[derive(Debug, Clone, PartialEq)]
@@ -290,7 +290,7 @@ pub fn emit_cuda_fn(name: &str, ast: &Ast, params: &[&str]) -> Result<String, CU
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn emit(expr: &str) -> Result<CUDAExpr, CUDAError> {
         let expr = Expr::parse(expr).unwrap();

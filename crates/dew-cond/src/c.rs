@@ -1,6 +1,6 @@
 //! C code generation helpers for conditionals.
 
-use rhizome_dew_core::CompareOp;
+use wick_core::CompareOp;
 
 /// Emit C code for a comparison operation.
 /// Returns boolean expression as string (evaluates to 0 or 1 in C).

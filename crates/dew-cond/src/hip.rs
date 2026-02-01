@@ -4,7 +4,7 @@
 //! For vector operations, explicit component selection may be needed.
 //! HIP is source-compatible with CUDA syntax.
 
-use rhizome_dew_core::CompareOp;
+use wick_core::CompareOp;
 
 /// Emit a comparison expression.
 pub fn emit_compare(op: CompareOp, left: &str, right: &str) -> String {

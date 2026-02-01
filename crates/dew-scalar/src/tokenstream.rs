@@ -4,8 +4,8 @@
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use rhizome_dew_cond::tokenstream as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
+use wick_cond::tokenstream as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// TokenStream emission error.
 #[derive(Debug, Clone, PartialEq)]
@@ -304,7 +304,7 @@ fn syn_ident(name: &str) -> proc_macro2::Ident {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn compile(input: &str) -> String {
         let expr = Expr::parse(input).unwrap();

@@ -7,9 +7,9 @@ use cranelift_codegen::ir::{InstBuilder, Value as CraneliftValue};
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{FuncId, Linkage, Module};
-use rhizome_dew_cond::cranelift as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_cond::cranelift as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// Dispatch a JIT function call based on parameter count (f32 version).
 /// Centralizes the unsafe transmute logic for all arities 0-16.
@@ -968,12 +968,12 @@ fn compile_ast_int(
             let l = compile_ast_int(left, builder, vars, math)?;
             let r = compile_ast_int(right, builder, vars, math)?;
             let cc = match op {
-                rhizome_dew_core::CompareOp::Lt => IntCC::SignedLessThan,
-                rhizome_dew_core::CompareOp::Le => IntCC::SignedLessThanOrEqual,
-                rhizome_dew_core::CompareOp::Gt => IntCC::SignedGreaterThan,
-                rhizome_dew_core::CompareOp::Ge => IntCC::SignedGreaterThanOrEqual,
-                rhizome_dew_core::CompareOp::Eq => IntCC::Equal,
-                rhizome_dew_core::CompareOp::Ne => IntCC::NotEqual,
+                wick_core::CompareOp::Lt => IntCC::SignedLessThan,
+                wick_core::CompareOp::Le => IntCC::SignedLessThanOrEqual,
+                wick_core::CompareOp::Gt => IntCC::SignedGreaterThan,
+                wick_core::CompareOp::Ge => IntCC::SignedGreaterThanOrEqual,
+                wick_core::CompareOp::Eq => IntCC::Equal,
+                wick_core::CompareOp::Ne => IntCC::NotEqual,
             };
             let cmp = builder.ins().icmp(cc, l, r);
             let one = builder.ins().iconst(types::I32, 1);
@@ -1126,7 +1126,7 @@ fn compile_function_int(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn eval(input: &str, params: &[&str], args: &[f32]) -> f32 {
         let expr = Expr::parse(input).unwrap();

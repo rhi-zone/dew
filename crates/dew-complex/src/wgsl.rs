@@ -3,9 +3,9 @@
 //! Complex numbers are represented as vec2<f32> where x=real, y=imag.
 
 use crate::Type;
-use rhizome_dew_cond::wgsl as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_cond::wgsl as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// Error during WGSL code generation.
 #[derive(Debug, Clone, PartialEq)]
@@ -566,7 +566,7 @@ fn emit_function_call(name: &str, args: Vec<WgslExpr>) -> Result<WgslExpr, WgslE
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn emit(expr: &str, var_types: &[(&str, Type)]) -> Result<WgslExpr, WgslError> {
         let expr = Expr::parse(expr).unwrap();

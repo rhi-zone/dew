@@ -2,9 +2,9 @@
 //!
 //! Provides parsing and code generation for use in web browsers.
 
-use rhizome_dew_core::Expr;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
+use wick_core::Expr;
 
 #[wasm_bindgen(start)]
 pub fn init() {
@@ -79,8 +79,8 @@ pub fn parse(input: &str) -> JsValue {
 }
 
 /// Convert AST to JavaScript-friendly representation.
-fn ast_to_js(ast: &rhizome_dew_core::Ast) -> JsAstNode {
-    use rhizome_dew_core::Ast;
+fn ast_to_js(ast: &wick_core::Ast) -> JsAstNode {
+    use wick_core::Ast;
 
     match ast {
         Ast::Num(n) => JsAstNode {
@@ -144,14 +144,14 @@ fn ast_to_js(ast: &rhizome_dew_core::Ast) -> JsAstNode {
 // Scalar backends (always available with "core" feature)
 // =============================================================================
 
-#[cfg(feature = "rhizome-dew-scalar")]
+#[cfg(feature = "wick-scalar")]
 mod scalar {
     use super::*;
 
     /// Generate WGSL code from a scalar expression.
     #[wasm_bindgen]
     pub fn emit_wgsl(input: &str) -> JsValue {
-        use rhizome_dew_scalar::wgsl;
+        use wick_scalar::wgsl;
 
         let result = match Expr::parse(input) {
             Ok(expr) => match wgsl::emit_wgsl(expr.ast()) {
@@ -167,7 +167,7 @@ mod scalar {
     /// Generate GLSL code from a scalar expression.
     #[wasm_bindgen]
     pub fn emit_glsl(input: &str) -> JsValue {
-        use rhizome_dew_scalar::glsl;
+        use wick_scalar::glsl;
 
         let result = match Expr::parse(input) {
             Ok(expr) => match glsl::emit_glsl(expr.ast()) {
@@ -183,7 +183,7 @@ mod scalar {
     /// Generate Lua code from a scalar expression.
     #[wasm_bindgen]
     pub fn emit_lua(input: &str) -> JsValue {
-        use rhizome_dew_scalar::lua;
+        use wick_scalar::lua;
 
         let result = match Expr::parse(input) {
             Ok(expr) => match lua::emit_lua(expr.ast()) {
@@ -201,12 +201,12 @@ mod scalar {
 // Linalg backends
 // =============================================================================
 
-#[cfg(feature = "rhizome-dew-linalg")]
+#[cfg(feature = "wick-linalg")]
 mod linalg {
     use super::*;
-    use rhizome_dew_linalg::Type;
     use serde::Deserialize;
     use std::collections::HashMap;
+    use wick_linalg::Type;
 
     #[derive(Deserialize)]
     struct VarTypes(HashMap<String, String>);
@@ -239,7 +239,7 @@ mod linalg {
     /// var_types: { "varName": "vec3", ... }
     #[wasm_bindgen]
     pub fn emit_wgsl_linalg(input: &str, var_types: JsValue) -> JsValue {
-        use rhizome_dew_linalg::wgsl;
+        use wick_linalg::wgsl;
 
         let result = match parse_var_types(var_types) {
             Ok(types) => match Expr::parse(input) {
@@ -259,7 +259,7 @@ mod linalg {
     /// var_types: { "varName": "vec3", ... }
     #[wasm_bindgen]
     pub fn emit_glsl_linalg(input: &str, var_types: JsValue) -> JsValue {
-        use rhizome_dew_linalg::glsl;
+        use wick_linalg::glsl;
 
         let result = match parse_var_types(var_types) {
             Ok(types) => match Expr::parse(input) {
@@ -279,7 +279,7 @@ mod linalg {
     /// var_types: { "varName": "vec3", ... }
     #[wasm_bindgen]
     pub fn emit_lua_linalg(input: &str, var_types: JsValue) -> JsValue {
-        use rhizome_dew_linalg::lua;
+        use wick_linalg::lua;
 
         let result = match parse_var_types(var_types) {
             Ok(types) => match Expr::parse(input) {
@@ -300,12 +300,12 @@ mod linalg {
 // Complex backends
 // =============================================================================
 
-#[cfg(feature = "rhizome-dew-complex")]
+#[cfg(feature = "wick-complex")]
 mod complex {
     use super::*;
-    use rhizome_dew_complex::Type;
     use serde::Deserialize;
     use std::collections::HashMap;
+    use wick_complex::Type;
 
     #[derive(Deserialize)]
     struct VarTypes(HashMap<String, String>);
@@ -333,7 +333,7 @@ mod complex {
     /// var_types: { "z": "complex", "t": "scalar", ... }
     #[wasm_bindgen]
     pub fn emit_wgsl_complex(input: &str, var_types: JsValue) -> JsValue {
-        use rhizome_dew_complex::wgsl;
+        use wick_complex::wgsl;
 
         let result = match parse_var_types(var_types) {
             Ok(types) => match Expr::parse(input) {
@@ -353,7 +353,7 @@ mod complex {
     /// var_types: { "z": "complex", "t": "scalar", ... }
     #[wasm_bindgen]
     pub fn emit_glsl_complex(input: &str, var_types: JsValue) -> JsValue {
-        use rhizome_dew_complex::glsl;
+        use wick_complex::glsl;
 
         let result = match parse_var_types(var_types) {
             Ok(types) => match Expr::parse(input) {
@@ -373,7 +373,7 @@ mod complex {
     /// var_types: { "z": "complex", "t": "scalar", ... }
     #[wasm_bindgen]
     pub fn emit_lua_complex(input: &str, var_types: JsValue) -> JsValue {
-        use rhizome_dew_complex::lua;
+        use wick_complex::lua;
 
         let result = match parse_var_types(var_types) {
             Ok(types) => match Expr::parse(input) {
@@ -394,12 +394,12 @@ mod complex {
 // Quaternion backends
 // =============================================================================
 
-#[cfg(feature = "rhizome-dew-quaternion")]
+#[cfg(feature = "wick-quaternion")]
 mod quaternion {
     use super::*;
-    use rhizome_dew_quaternion::Type;
     use serde::Deserialize;
     use std::collections::HashMap;
+    use wick_quaternion::Type;
 
     #[derive(Deserialize)]
     struct VarTypes(HashMap<String, String>);
@@ -428,7 +428,7 @@ mod quaternion {
     /// var_types: { "q": "quaternion", "v": "vec3", ... }
     #[wasm_bindgen]
     pub fn emit_wgsl_quaternion(input: &str, var_types: JsValue) -> JsValue {
-        use rhizome_dew_quaternion::wgsl;
+        use wick_quaternion::wgsl;
 
         let result = match parse_var_types(var_types) {
             Ok(types) => match Expr::parse(input) {
@@ -448,7 +448,7 @@ mod quaternion {
     /// var_types: { "q": "quaternion", "v": "vec3", ... }
     #[wasm_bindgen]
     pub fn emit_glsl_quaternion(input: &str, var_types: JsValue) -> JsValue {
-        use rhizome_dew_quaternion::glsl;
+        use wick_quaternion::glsl;
 
         let result = match parse_var_types(var_types) {
             Ok(types) => match Expr::parse(input) {
@@ -468,7 +468,7 @@ mod quaternion {
     /// var_types: { "q": "quaternion", "v": "vec3", ... }
     #[wasm_bindgen]
     pub fn emit_lua_quaternion(input: &str, var_types: JsValue) -> JsValue {
-        use rhizome_dew_quaternion::lua;
+        use wick_quaternion::lua;
 
         let result = match parse_var_types(var_types) {
             Ok(types) => match Expr::parse(input) {

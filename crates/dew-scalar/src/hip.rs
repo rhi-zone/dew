@@ -4,8 +4,8 @@
 //! HIP is source-compatible with CUDA, using the same math functions
 //! (sinf, cosf, etc.) and standard float literals.
 
-use rhizome_dew_cond::hip as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
+use wick_cond::hip as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// HIP emission error.
 #[derive(Debug, Clone, PartialEq)]
@@ -291,7 +291,7 @@ pub fn emit_hip_fn(name: &str, ast: &Ast, params: &[&str]) -> Result<String, HIP
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn emit(expr: &str) -> Result<HIPExpr, HIPError> {
         let expr = Expr::parse(expr).unwrap();

@@ -1,92 +1,92 @@
 [package]
-name = "rhizome-dew-all"
+name = "wick-all"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Combined domain crate for dew expressions (linalg + complex + quaternion)"
+description = "Combined domain crate for wick expressions (linalg + complex + quaternion)"
 
 [features]
 default = ["scalar", "linalg", "complex", "quaternion"]
-scalar = ["rhizome-dew-scalar"]
-linalg = ["rhizome-dew-linalg", "rhizome-dew-linalg/4d"]
-complex = ["rhizome-dew-complex"]
-quaternion = ["rhizome-dew-quaternion"]
+scalar = ["wick-scalar"]
+linalg = ["wick-linalg", "wick-linalg/4d"]
+complex = ["wick-complex"]
+quaternion = ["wick-quaternion"]
 
 # Backend features - propagate to all domain crates
 wgsl = [
-    "rhizome-dew-scalar?/wgsl",
-    "rhizome-dew-linalg?/wgsl",
-    "rhizome-dew-complex?/wgsl",
-    "rhizome-dew-quaternion?/wgsl",
+    "wick-scalar?/wgsl",
+    "wick-linalg?/wgsl",
+    "wick-complex?/wgsl",
+    "wick-quaternion?/wgsl",
 ]
 glsl = [
-    "rhizome-dew-scalar?/glsl",
-    "rhizome-dew-linalg?/glsl",
-    "rhizome-dew-complex?/glsl",
-    "rhizome-dew-quaternion?/glsl",
+    "wick-scalar?/glsl",
+    "wick-linalg?/glsl",
+    "wick-complex?/glsl",
+    "wick-quaternion?/glsl",
 ]
 rust = [
-    "rhizome-dew-scalar?/rust",
-    "rhizome-dew-linalg?/rust",
-    "rhizome-dew-complex?/rust",
-    "rhizome-dew-quaternion?/rust",
+    "wick-scalar?/rust",
+    "wick-linalg?/rust",
+    "wick-complex?/rust",
+    "wick-quaternion?/rust",
 ]
 c = [
-    "rhizome-dew-scalar?/c",
-    "rhizome-dew-linalg?/c",
-    "rhizome-dew-complex?/c",
-    "rhizome-dew-quaternion?/c",
+    "wick-scalar?/c",
+    "wick-linalg?/c",
+    "wick-complex?/c",
+    "wick-quaternion?/c",
 ]
 opencl = [
-    "rhizome-dew-scalar?/opencl",
-    "rhizome-dew-linalg?/opencl",
-    "rhizome-dew-complex?/opencl",
-    "rhizome-dew-quaternion?/opencl",
+    "wick-scalar?/opencl",
+    "wick-linalg?/opencl",
+    "wick-complex?/opencl",
+    "wick-quaternion?/opencl",
 ]
 cuda = [
-    "rhizome-dew-scalar?/cuda",
-    "rhizome-dew-linalg?/cuda",
-    "rhizome-dew-complex?/cuda",
-    "rhizome-dew-quaternion?/cuda",
+    "wick-scalar?/cuda",
+    "wick-linalg?/cuda",
+    "wick-complex?/cuda",
+    "wick-quaternion?/cuda",
 ]
 hip = [
-    "rhizome-dew-scalar?/hip",
-    "rhizome-dew-linalg?/hip",
-    "rhizome-dew-complex?/hip",
-    "rhizome-dew-quaternion?/hip",
+    "wick-scalar?/hip",
+    "wick-linalg?/hip",
+    "wick-complex?/hip",
+    "wick-quaternion?/hip",
 ]
 tokenstream = [
-    "rhizome-dew-scalar?/tokenstream",
-    "rhizome-dew-linalg?/tokenstream",
-    "rhizome-dew-complex?/tokenstream",
-    "rhizome-dew-quaternion?/tokenstream",
+    "wick-scalar?/tokenstream",
+    "wick-linalg?/tokenstream",
+    "wick-complex?/tokenstream",
+    "wick-quaternion?/tokenstream",
 ]
 lua = [
-    "rhizome-dew-scalar?/lua",
-    "rhizome-dew-linalg?/lua",
-    "rhizome-dew-complex?/lua",
-    "rhizome-dew-quaternion?/lua",
+    "wick-scalar?/lua",
+    "wick-linalg?/lua",
+    "wick-complex?/lua",
+    "wick-quaternion?/lua",
 ]
 cranelift = [
-    "rhizome-dew-scalar?/cranelift",
-    "rhizome-dew-linalg?/cranelift",
-    "rhizome-dew-complex?/cranelift",
-    "rhizome-dew-quaternion?/cranelift",
+    "wick-scalar?/cranelift",
+    "wick-linalg?/cranelift",
+    "wick-complex?/cranelift",
+    "wick-quaternion?/cranelift",
 ]
 optimize = [
-    "rhizome-dew-scalar?/optimize",
-    "rhizome-dew-linalg?/optimize",
-    "rhizome-dew-complex?/optimize",
-    "rhizome-dew-quaternion?/optimize",
+    "wick-scalar?/optimize",
+    "wick-linalg?/optimize",
+    "wick-complex?/optimize",
+    "wick-quaternion?/optimize",
 ]
 
 [dependencies]
-rhizome-dew-core = { workspace = true, features = ["func"] }
+wick-core = { workspace = true, features = ["func"] }
 num-traits = "0.2"
 
 # Optional domain crate dependencies
-rhizome-dew-scalar = { workspace = true, optional = true }
-rhizome-dew-linalg = { workspace = true, optional = true }
-rhizome-dew-complex = { workspace = true, optional = true }
-rhizome-dew-quaternion = { workspace = true, optional = true }
+wick-scalar = { workspace = true, optional = true }
+wick-linalg = { workspace = true, optional = true }
+wick-complex = { workspace = true, optional = true }
+wick-quaternion = { workspace = true, optional = true }

@@ -10,13 +10,13 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/rhi-zone/dew"
 
 [workspace.dependencies]
-rhizome-dew-core = { path = "crates/dew-core", version = "0.1.0" }
-rhizome-dew-cond = { path = "crates/dew-cond", version = "0.1.0" }
-rhizome-dew-scalar = { path = "crates/dew-scalar", version = "0.1.0" }
-rhizome-dew-linalg = { path = "crates/dew-linalg", version = "0.1.0" }
-rhizome-dew-complex = { path = "crates/dew-complex", version = "0.1.0" }
-rhizome-dew-quaternion = { path = "crates/dew-quaternion", version = "0.1.0" }
-rhizome-dew-all = { path = "crates/dew-all", version = "0.1.0" }
+wick-core = { path = "crates/dew-core", version = "0.1.0" }
+wick-cond = { path = "crates/dew-cond", version = "0.1.0" }
+wick-scalar = { path = "crates/dew-scalar", version = "0.1.0" }
+wick-linalg = { path = "crates/dew-linalg", version = "0.1.0" }
+wick-complex = { path = "crates/dew-complex", version = "0.1.0" }
+wick-quaternion = { path = "crates/dew-quaternion", version = "0.1.0" }
+wick-all = { path = "crates/dew-all", version = "0.1.0" }
 
 # Root package for examples
 [package]
@@ -27,14 +27,14 @@ publish = false
 
 [features]
 default = []
-wgsl = ["rhizome-dew-scalar/wgsl"]
+wgsl = ["wick-scalar/wgsl"]
 
 [dependencies]
-rhizome-dew-core = { workspace = true, features = ["cond", "func"] }
-rhizome-dew-scalar = { workspace = true }
-rhizome-dew-linalg = { workspace = true }
-rhizome-dew-complex = { workspace = true }
-rhizome-dew-quaternion = { workspace = true }
+wick-core = { workspace = true, features = ["cond", "func"] }
+wick-scalar = { workspace = true }
+wick-linalg = { workspace = true }
+wick-complex = { workspace = true }
+wick-quaternion = { workspace = true }
 
 [[example]]
 name = "basic"

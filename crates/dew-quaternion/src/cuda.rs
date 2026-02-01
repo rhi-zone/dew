@@ -4,9 +4,9 @@
 //! float3 for Vec3. Quaternion operations require external functions.
 
 use crate::Type;
-use rhizome_dew_cond::cuda as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_cond::cuda as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// Error during CUDA code generation.
 #[derive(Debug, Clone, PartialEq)]
@@ -420,7 +420,7 @@ fn emit_function_call(name: &str, args: Vec<CUDAExpr>) -> Result<CUDAExpr, CUDAE
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn emit(expr: &str, var_types: &[(&str, Type)]) -> Result<CUDAExpr, CUDAError> {
         let expr = Expr::parse(expr).unwrap();

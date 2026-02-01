@@ -5,9 +5,9 @@
 //! Uses function-based operations (e.g., quat_mul, quat_conj, quat_normalize).
 
 use crate::Type;
-use rhizome_dew_cond::c as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_cond::c as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// Error during C code generation.
 #[derive(Debug, Clone, PartialEq)]
@@ -620,7 +620,7 @@ fn emit_function_call(name: &str, args: Vec<CExpr>) -> Result<CExpr, CError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn emit(expr: &str, var_types: &[(&str, Type)]) -> Result<CExpr, CError> {
         let expr = Expr::parse(expr).unwrap();

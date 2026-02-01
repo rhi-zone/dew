@@ -5,8 +5,8 @@ Generate HIP kernel code from dew expressions for AMD GPUs (ROCm).
 ## Enable
 
 ```toml
-rhizome-dew-scalar = { version = "0.1", features = ["hip"] }
-rhizome-dew-linalg = { version = "0.1", features = ["hip"] }
+wick-scalar = { version = "0.1", features = ["hip"] }
+wick-linalg = { version = "0.1", features = ["hip"] }
 ```
 
 ## Overview
@@ -18,8 +18,8 @@ HIP (Heterogeneous-compute Interface for Portability) is AMD's GPU programming p
 ### Generate Expression
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::hip::emit_hip;
+use wick_core::Expr;
+use wick_scalar::hip::emit_hip;
 
 let expr = Expr::parse("sin(x) + cos(y)").unwrap();
 let hip = emit_hip(expr.ast()).unwrap();
@@ -31,7 +31,7 @@ println!("{}", hip.code);
 ### Generate Device Function
 
 ```rust
-use rhizome_dew_scalar::hip::emit_hip_fn;
+use wick_scalar::hip::emit_hip_fn;
 
 let expr = Expr::parse("x * x + y * y").unwrap();
 let hip = emit_hip_fn("distance_squared", expr.ast(), &["x", "y"]).unwrap();
@@ -48,9 +48,9 @@ println!("{}", hip);
 ### Generate with Types
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_linalg::hip::emit_hip;
-use rhizome_dew_linalg::Type;
+use wick_core::Expr;
+use wick_linalg::hip::emit_hip;
+use wick_linalg::Type;
 use std::collections::HashMap;
 
 let expr = Expr::parse("dot(a, b)").unwrap();

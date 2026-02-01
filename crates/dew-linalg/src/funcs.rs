@@ -5,7 +5,7 @@
 
 use crate::{LinalgFn, LinalgValue, Signature, Type};
 use num_traits::Float;
-use rhizome_dew_core::Numeric;
+use wick_core::Numeric;
 
 // ============================================================================
 // Dot product
@@ -1693,8 +1693,8 @@ pub fn linalg_registry_int<T: Numeric + 'static>() -> FunctionRegistry<T, Value<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
     use std::collections::HashMap;
+    use wick_core::Expr;
 
     fn eval_expr(expr: &str, vars: &[(&str, Value<f32>)]) -> Value<f32> {
         let expr = Expr::parse(expr).unwrap();
@@ -1831,7 +1831,7 @@ mod tests {
 
     #[test]
     fn test_integer_vectors() {
-        use rhizome_dew_core::Expr;
+        use wick_core::Expr;
 
         // Create integer registry
         let registry: crate::FunctionRegistry<i32, Value<i32>> = linalg_registry_int();

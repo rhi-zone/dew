@@ -345,13 +345,13 @@ Example: `dew-linalg-glsl` crate
 
 ```toml
 [dependencies]
-rhizome-dew-core = "..."   # For Ast
-rhizome-dew-linalg = "..." # For Type enum
+wick-core = "..."   # For Ast
+wick-linalg = "..." # For Type enum
 ```
 
 ```rust
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
-use rhizome_dew_linalg::Type;
+use wick_core::{Ast, BinOp, UnaryOp};
+use wick_linalg::Type;
 
 pub fn emit_glsl(ast: &Ast, var_types: &HashMap<String, Type>) -> Result<GlslExpr, GlslError> {
     match ast {

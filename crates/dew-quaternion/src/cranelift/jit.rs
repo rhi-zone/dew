@@ -6,8 +6,8 @@ use cranelift_codegen::ir::{AbiParam, InstBuilder, MemFlags, condcodes::FloatCC,
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{Linkage, Module};
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 use super::compiled::{CompiledQuatFn, CompiledQuaternionFn, CompiledVec3Fn};
 use super::error::CraneliftError;
@@ -938,7 +938,7 @@ fn compile_call(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn approx_eq(a: f32, b: f32) -> bool {
         (a - b).abs() < 0.0001

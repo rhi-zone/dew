@@ -251,11 +251,11 @@ dependencies = [
 name = "dew-examples"
 version = "0.0.0"
 dependencies = [
- "rhizome-dew-complex",
- "rhizome-dew-core",
- "rhizome-dew-linalg",
- "rhizome-dew-quaternion",
- "rhizome-dew-scalar",
+ "wick-complex",
+ "wick-core",
+ "wick-linalg",
+ "wick-quaternion",
+ "wick-scalar",
 ]
 
 [[package]]
@@ -717,119 +717,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rhizome-dew-all"
-version = "0.1.0"
-dependencies = [
- "num-traits",
- "rhizome-dew-complex",
- "rhizome-dew-core",
- "rhizome-dew-linalg",
- "rhizome-dew-quaternion",
- "rhizome-dew-scalar",
-]
-
-[[package]]
-name = "rhizome-dew-complex"
-version = "0.1.0"
-dependencies = [
- "cranelift-codegen",
- "cranelift-frontend",
- "cranelift-jit",
- "cranelift-module",
- "mlua",
- "num-traits",
- "proc-macro2",
- "quote",
- "rhizome-dew-cond",
- "rhizome-dew-core",
-]
-
-[[package]]
-name = "rhizome-dew-cond"
-version = "0.1.0"
-dependencies = [
- "cranelift-codegen",
- "cranelift-frontend",
- "cranelift-jit",
- "cranelift-module",
- "proc-macro2",
- "quote",
- "rhizome-dew-core",
-]
-
-[[package]]
-name = "rhizome-dew-core"
-version = "0.1.0"
-dependencies = [
- "num-traits",
- "proptest",
-]
-
-[[package]]
-name = "rhizome-dew-linalg"
-version = "0.1.0"
-dependencies = [
- "cranelift-codegen",
- "cranelift-frontend",
- "cranelift-jit",
- "cranelift-module",
- "mlua",
- "num-traits",
- "proc-macro2",
- "quote",
- "rhizome-dew-cond",
- "rhizome-dew-core",
-]
-
-[[package]]
-name = "rhizome-dew-quaternion"
-version = "0.1.0"
-dependencies = [
- "cranelift-codegen",
- "cranelift-frontend",
- "cranelift-jit",
- "cranelift-module",
- "mlua",
- "num-traits",
- "proc-macro2",
- "quote",
- "rhizome-dew-cond",
- "rhizome-dew-core",
-]
-
-[[package]]
-name = "rhizome-dew-scalar"
-version = "0.1.0"
-dependencies = [
- "cranelift-codegen",
- "cranelift-frontend",
- "cranelift-jit",
- "cranelift-module",
- "mlua",
- "num-traits",
- "proc-macro2",
- "quote",
- "rhizome-dew-cond",
- "rhizome-dew-core",
-]
-
-[[package]]
-name = "rhizome-dew-wasm"
-version = "0.1.0"
-dependencies = [
- "console_error_panic_hook",
- "rhizome-dew-complex",
- "rhizome-dew-core",
- "rhizome-dew-linalg",
- "rhizome-dew-quaternion",
- "rhizome-dew-scalar",
- "serde",
- "serde-wasm-bindgen",
- "wasm-bindgen",
- "wasm-bindgen-test",
-]
-
-[[package]]
 name = "rustc-hash"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1159,6 +1046,119 @@ dependencies = [
  "env_home",
  "rustix",
  "winsafe",
+]
+
+[[package]]
+name = "wick-all"
+version = "0.1.0"
+dependencies = [
+ "num-traits",
+ "wick-complex",
+ "wick-core",
+ "wick-linalg",
+ "wick-quaternion",
+ "wick-scalar",
+]
+
+[[package]]
+name = "wick-complex"
+version = "0.1.0"
+dependencies = [
+ "cranelift-codegen",
+ "cranelift-frontend",
+ "cranelift-jit",
+ "cranelift-module",
+ "mlua",
+ "num-traits",
+ "proc-macro2",
+ "quote",
+ "wick-cond",
+ "wick-core",
+]
+
+[[package]]
+name = "wick-cond"
+version = "0.1.0"
+dependencies = [
+ "cranelift-codegen",
+ "cranelift-frontend",
+ "cranelift-jit",
+ "cranelift-module",
+ "proc-macro2",
+ "quote",
+ "wick-core",
+]
+
+[[package]]
+name = "wick-core"
+version = "0.1.0"
+dependencies = [
+ "num-traits",
+ "proptest",
+]
+
+[[package]]
+name = "wick-linalg"
+version = "0.1.0"
+dependencies = [
+ "cranelift-codegen",
+ "cranelift-frontend",
+ "cranelift-jit",
+ "cranelift-module",
+ "mlua",
+ "num-traits",
+ "proc-macro2",
+ "quote",
+ "wick-cond",
+ "wick-core",
+]
+
+[[package]]
+name = "wick-quaternion"
+version = "0.1.0"
+dependencies = [
+ "cranelift-codegen",
+ "cranelift-frontend",
+ "cranelift-jit",
+ "cranelift-module",
+ "mlua",
+ "num-traits",
+ "proc-macro2",
+ "quote",
+ "wick-cond",
+ "wick-core",
+]
+
+[[package]]
+name = "wick-scalar"
+version = "0.1.0"
+dependencies = [
+ "cranelift-codegen",
+ "cranelift-frontend",
+ "cranelift-jit",
+ "cranelift-module",
+ "mlua",
+ "num-traits",
+ "proc-macro2",
+ "quote",
+ "wick-cond",
+ "wick-core",
+]
+
+[[package]]
+name = "wick-wasm"
+version = "0.1.0"
+dependencies = [
+ "console_error_panic_hook",
+ "serde",
+ "serde-wasm-bindgen",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+ "wick-complex",
+ "wick-core",
+ "wick-linalg",
+ "wick-quaternion",
+ "wick-scalar",
 ]
 
 [[package]]

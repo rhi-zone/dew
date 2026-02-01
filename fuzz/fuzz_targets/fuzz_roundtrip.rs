@@ -1,7 +1,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rhizome_dew_core::Expr;
+use wick_core::Expr;
 
 fuzz_target!(|data: &str| {
     // Only test expressions that parse successfully

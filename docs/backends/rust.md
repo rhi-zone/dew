@@ -5,8 +5,8 @@ Generate Rust source code from dew expressions.
 ## Enable
 
 ```toml
-rhizome-dew-scalar = { version = "0.1", features = ["rust"] }
-rhizome-dew-linalg = { version = "0.1", features = ["rust"] }
+wick-scalar = { version = "0.1", features = ["rust"] }
+wick-linalg = { version = "0.1", features = ["rust"] }
 ```
 
 ## dew-scalar
@@ -14,8 +14,8 @@ rhizome-dew-linalg = { version = "0.1", features = ["rust"] }
 ### Generate Expression
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::rust::emit_rust;
+use wick_core::Expr;
+use wick_scalar::rust::emit_rust;
 
 let expr = Expr::parse("sin(x) + cos(y)").unwrap();
 let rust = emit_rust(expr.ast()).unwrap();
@@ -27,7 +27,7 @@ println!("{}", rust.code);
 ### Generate Function
 
 ```rust
-use rhizome_dew_scalar::rust::emit_rust_fn;
+use wick_scalar::rust::emit_rust_fn;
 
 let expr = Expr::parse("x * x + y * y").unwrap();
 let rust = emit_rust_fn("distance_squared", expr.ast(), &["x", "y"]).unwrap();
@@ -44,9 +44,9 @@ println!("{}", rust);
 ### Generate with Types
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_linalg::rust::emit_rust;
-use rhizome_dew_linalg::Type;
+use wick_core::Expr;
+use wick_linalg::rust::emit_rust;
+use wick_linalg::Type;
 use std::collections::HashMap;
 
 let expr = Expr::parse("dot(a, b)").unwrap();

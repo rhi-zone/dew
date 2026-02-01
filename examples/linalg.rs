@@ -2,9 +2,9 @@
 //!
 //! Run with: cargo run --example linalg
 
-use rhizome_dew_core::Expr;
-use rhizome_dew_linalg::{Value, eval, linalg_registry};
 use std::collections::HashMap;
+use wick_core::Expr;
+use wick_linalg::{Value, eval, linalg_registry};
 
 fn main() {
     let registry = linalg_registry();

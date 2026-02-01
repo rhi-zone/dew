@@ -6,8 +6,8 @@
 #[cfg(any(feature = "lua", feature = "wgsl"))]
 use crate::Type;
 use crate::{Value, eval, linalg_registry};
-use rhizome_dew_core::Expr;
 use std::collections::HashMap;
+use wick_core::Expr;
 
 const EPSILON: f32 = 0.0001;
 

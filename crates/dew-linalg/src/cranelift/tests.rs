@@ -3,7 +3,7 @@
 use super::jit::LinalgJit;
 use super::types::VarSpec;
 use crate::Type;
-use rhizome_dew_core::Expr;
+use wick_core::Expr;
 
 #[test]
 fn test_scalar_add() {

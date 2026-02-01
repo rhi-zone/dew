@@ -7,8 +7,8 @@
 //! # Quick Start
 //!
 //! ```
-//! use rhizome_dew_core::Expr;
-//! use rhizome_dew_scalar::{eval, scalar_registry};
+//! use wick_core::Expr;
+//! use wick_scalar::{eval, scalar_registry};
 //! use std::collections::HashMap;
 //!
 //! // Parse and evaluate an expression
@@ -98,7 +98,7 @@
 //! You can register custom functions by implementing the [`ScalarFn`] trait:
 //!
 //! ```
-//! use rhizome_dew_scalar::{ScalarFn, FunctionRegistry, scalar_registry};
+//! use wick_scalar::{ScalarFn, FunctionRegistry, scalar_registry};
 //!
 //! struct Double;
 //! impl ScalarFn<f32> for Double {
@@ -116,8 +116,8 @@
 //! All functions work with `f64` by specifying the type parameter:
 //!
 //! ```
-//! use rhizome_dew_core::Expr;
-//! use rhizome_dew_scalar::{eval, scalar_registry, FunctionRegistry};
+//! use wick_core::Expr;
+//! use wick_scalar::{eval, scalar_registry, FunctionRegistry};
 //! use std::collections::HashMap;
 //!
 //! let registry: FunctionRegistry<f64> = scalar_registry();
@@ -127,12 +127,12 @@
 //! ```
 
 use num_traits::{Float, NumCast, PrimInt};
-use rhizome_dew_core::{Ast, BinOp, CompareOp, UnaryOp};
+use wick_core::{Ast, BinOp, CompareOp, UnaryOp};
 
 // Re-export Numeric from dew-core
-pub use rhizome_dew_core::Numeric;
 use std::collections::HashMap;
 use std::sync::Arc;
+pub use wick_core::Numeric;
 
 #[cfg(feature = "wgsl")]
 pub mod wgsl;
@@ -1295,7 +1295,7 @@ pub fn scalar_registry_int<T: PrimInt + 'static>() -> FunctionRegistry<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn eval_expr(expr: &str, vars: &[(&str, f32)]) -> f32 {
         let registry = scalar_registry();

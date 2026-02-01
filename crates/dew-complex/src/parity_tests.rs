@@ -3,9 +3,9 @@
 #[cfg(feature = "cranelift")]
 use crate::{Type, Value, complex_registry, eval};
 #[cfg(feature = "cranelift")]
-use rhizome_dew_core::Expr;
-#[cfg(feature = "cranelift")]
 use std::collections::HashMap;
+#[cfg(feature = "cranelift")]
+use wick_core::Expr;
 
 #[cfg(feature = "cranelift")]
 use crate::cranelift::{ComplexJit, VarSpec};

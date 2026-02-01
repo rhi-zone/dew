@@ -6,14 +6,14 @@
 //! # Example
 //!
 //! ```
-//! use rhizome_dew_core::Expr;
-//! use rhizome_dew_core::optimize::{optimize, standard_passes};
-//! use rhizome_dew_quaternion::optimize::QuaternionConstantFolding;
+//! use wick_core::Expr;
+//! use wick_core::optimize::{optimize, standard_passes};
+//! use wick_quaternion::optimize::QuaternionConstantFolding;
 //!
 //! let expr = Expr::parse("length(vec3(3, 4, 0))").unwrap();
 //!
 //! // Combine core passes with quaternion constant folding
-//! let mut passes: Vec<&dyn rhizome_dew_core::optimize::Pass> = standard_passes();
+//! let mut passes: Vec<&dyn wick_core::optimize::Pass> = standard_passes();
 //! passes.push(&QuaternionConstantFolding);
 //!
 //! let optimized = optimize(expr.ast().clone(), &passes);
@@ -45,8 +45,8 @@
 //! For full type-aware optimization, a future `TypedPass` trait could receive
 //! type information from the caller's context.
 
-use rhizome_dew_core::Ast;
-use rhizome_dew_core::optimize::Pass;
+use wick_core::Ast;
+use wick_core::optimize::Pass;
 
 /// Constant folding for quaternion operations.
 ///
@@ -378,8 +378,8 @@ pub fn quaternion_passes() -> Vec<&'static dyn Pass> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
-    use rhizome_dew_core::optimize::{optimize, standard_passes};
+    use wick_core::Expr;
+    use wick_core::optimize::{optimize, standard_passes};
 
     fn optimized(input: &str) -> Ast {
         let expr = Expr::parse(input).unwrap();

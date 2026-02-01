@@ -3,8 +3,8 @@
 //! Compiles expression ASTs to C source code.
 //! Uses math.h functions (sinf, cosf, etc.) and standard C float literals.
 
-use rhizome_dew_cond::c as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
+use wick_cond::c as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// C emission error.
 #[derive(Debug, Clone, PartialEq)]
@@ -397,7 +397,7 @@ fn format_float(n: f64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn compile(input: &str) -> String {
         let expr = Expr::parse(input).unwrap();

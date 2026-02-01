@@ -52,7 +52,7 @@
 //! ## WGSL Backend
 //!
 //! ```ignore
-//! use rhizome_dew_cond::{wgsl, CompareOp};
+//! use wick_cond::{wgsl, CompareOp};
 //!
 //! // Comparison
 //! let code = wgsl::emit_compare(CompareOp::Lt, "a", "b");
@@ -70,7 +70,7 @@
 //! ## Lua Backend
 //!
 //! ```ignore
-//! use rhizome_dew_cond::{lua, CompareOp};
+//! use wick_cond::{lua, CompareOp};
 //!
 //! // Comparison (note: Lua uses ~= for not-equal)
 //! let code = lua::emit_compare(CompareOp::Ne, "a", "b");
@@ -92,7 +92,7 @@
 //! the numeric representation and backend-native booleans.
 //!
 //! ```ignore
-//! use rhizome_dew_cond::wgsl;
+//! use wick_cond::wgsl;
 //!
 //! // Convert scalar to boolean for conditions
 //! let bool_expr = wgsl::scalar_to_bool("x");
@@ -103,7 +103,7 @@
 //! assert_eq!(scalar_expr, "select(0.0, 1.0, flag)");
 //! ```
 
-pub use rhizome_dew_core::CompareOp;
+pub use wick_core::CompareOp;
 
 #[cfg(feature = "wgsl")]
 pub mod wgsl;

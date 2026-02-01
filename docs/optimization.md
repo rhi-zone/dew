@@ -7,7 +7,7 @@ This document describes dew's expression optimization system: design decisions, 
 Dew provides optional expression optimization that transforms ASTs before evaluation or code generation. Optimizations reduce runtime computation by simplifying expressions at compile time.
 
 ```rust
-use rhizome_dew_core::{Expr, optimize};
+use wick_core::{Expr, optimize};
 
 let expr = Expr::parse("x * 1 + 0").unwrap();
 let optimized = optimize(expr.ast().clone());
@@ -113,7 +113,7 @@ Optimization is behind the `optimize` feature:
 
 ```toml
 [dependencies]
-rhizome-dew-core = { version = "...", features = ["optimize"] }
+wick-core = { version = "...", features = ["optimize"] }
 ```
 
 Rationale:
@@ -203,8 +203,8 @@ Domain crates provide additional optimization passes for their types:
 `ScalarConstantFolding` evaluates scalar functions at compile time:
 
 ```rust
-use rhizome_dew_core::optimize::{optimize, standard_passes};
-use rhizome_dew_scalar::optimize::ScalarConstantFolding;
+use wick_core::optimize::{optimize, standard_passes};
+use wick_scalar::optimize::ScalarConstantFolding;
 
 let mut passes = standard_passes();
 passes.push(&ScalarConstantFolding);
@@ -219,8 +219,8 @@ Supported: all standard math functions (sin, cos, sqrt, exp, log, etc.)
 `LinalgConstantFolding` evaluates vector operations at compile time:
 
 ```rust
-use rhizome_dew_core::optimize::{optimize, standard_passes};
-use rhizome_dew_linalg::optimize::LinalgConstantFolding;
+use wick_core::optimize::{optimize, standard_passes};
+use wick_linalg::optimize::LinalgConstantFolding;
 
 let mut passes = standard_passes();
 passes.push(&LinalgConstantFolding);
@@ -239,8 +239,8 @@ typed variables like `a + b` where `a, b: Vec3` are not yet optimized.
 `ComplexConstantFolding` evaluates complex number operations at compile time:
 
 ```rust
-use rhizome_dew_core::optimize::{optimize, standard_passes};
-use rhizome_dew_complex::optimize::ComplexConstantFolding;
+use wick_core::optimize::{optimize, standard_passes};
+use wick_complex::optimize::ComplexConstantFolding;
 
 let mut passes = standard_passes();
 passes.push(&ComplexConstantFolding);
@@ -258,8 +258,8 @@ Supports: re, im, conj, abs, arg, norm, exp, log, sqrt, pow.
 `QuaternionConstantFolding` evaluates quaternion and vector operations at compile time:
 
 ```rust
-use rhizome_dew_core::optimize::{optimize, standard_passes};
-use rhizome_dew_quaternion::optimize::QuaternionConstantFolding;
+use wick_core::optimize::{optimize, standard_passes};
+use wick_quaternion::optimize::QuaternionConstantFolding;
 
 let mut passes = standard_passes();
 passes.push(&QuaternionConstantFolding);
@@ -278,8 +278,8 @@ normalize, conj, inverse, lerp, slerp, axis_angle, rotate.
 Implement the `Pass` trait for domain-specific optimizations:
 
 ```rust
-use rhizome_dew_core::optimize::Pass;
-use rhizome_dew_core::Ast;
+use wick_core::optimize::Pass;
+use wick_core::Ast;
 
 pub struct MyDomainOptimizations;
 
@@ -296,7 +296,7 @@ impl Pass for MyDomainOptimizations {
 For backends implementing CSE, core provides `AstHasher`:
 
 ```rust
-use rhizome_dew_core::optimize::AstHasher;
+use wick_core::optimize::AstHasher;
 use std::collections::HashMap;
 
 struct EmitContext {

@@ -55,7 +55,7 @@
 //! ### Basic Arithmetic
 //!
 //! ```
-//! use rhizome_dew_core::Expr;
+//! use wick_core::Expr;
 //! use std::collections::HashMap;
 //!
 //! let expr = Expr::parse("x * 2 + y").unwrap();
@@ -67,14 +67,14 @@
 //! # #[cfg(not(feature = "func"))]
 //! let value = expr.eval(&vars).unwrap();
 //! # #[cfg(feature = "func")]
-//! # let value = expr.eval(&vars, &rhizome_dew_core::FunctionRegistry::new()).unwrap();
+//! # let value = expr.eval(&vars, &wick_core::FunctionRegistry::new()).unwrap();
 //! assert_eq!(value, 7.0);  // 3 * 2 + 1 = 7
 //! ```
 //!
 //! ### Working with the AST
 //!
 //! ```
-//! use rhizome_dew_core::{Expr, Ast, BinOp};
+//! use wick_core::{Expr, Ast, BinOp};
 //!
 //! let expr = Expr::parse("a + b * c").unwrap();
 //!
@@ -92,7 +92,7 @@
 //!
 #![cfg_attr(feature = "func", doc = "```")]
 #![cfg_attr(not(feature = "func"), doc = "```ignore")]
-//! use rhizome_dew_core::{Expr, ExprFn, FunctionRegistry, Ast};
+//! use wick_core::{Expr, ExprFn, FunctionRegistry, Ast};
 //! use std::collections::HashMap;
 //!
 //! struct Clamp;
@@ -119,7 +119,7 @@
 //!
 #![cfg_attr(feature = "cond", doc = "```")]
 #![cfg_attr(not(feature = "cond"), doc = "```ignore")]
-//! use rhizome_dew_core::Expr;
+//! use wick_core::Expr;
 //! use std::collections::HashMap;
 //!
 //! let expr = Expr::parse("if x > 0 then x else -x").unwrap();  // absolute value
@@ -130,7 +130,7 @@
 //! # #[cfg(not(feature = "func"))]
 //! let value = expr.eval(&vars).unwrap();
 //! # #[cfg(feature = "func")]
-//! # let value = expr.eval(&vars, &rhizome_dew_core::FunctionRegistry::new()).unwrap();
+//! # let value = expr.eval(&vars, &wick_core::FunctionRegistry::new()).unwrap();
 //! assert_eq!(value, 5.0);
 //! ```
 
@@ -642,7 +642,7 @@ impl<'a> Lexer<'a> {
 /// # Example
 ///
 /// ```
-/// use rhizome_dew_core::{Expr, Ast, BinOp};
+/// use wick_core::{Expr, Ast, BinOp};
 ///
 /// let expr = Expr::parse("2 + 3").unwrap();
 /// match expr.ast() {
@@ -865,7 +865,7 @@ impl Ast {
     /// # Example
     ///
     /// ```
-    /// use rhizome_dew_core::{Expr, Ast};
+    /// use wick_core::{Expr, Ast};
     ///
     /// let expr = Expr::parse("sin(x) + y * z").unwrap();
     /// let vars = expr.ast().free_vars();
@@ -1278,7 +1278,7 @@ impl<'a> Parser<'a> {
 /// # Example
 ///
 /// ```
-/// use rhizome_dew_core::Expr;
+/// use wick_core::Expr;
 /// use std::collections::HashMap;
 ///
 /// // Parse an expression
@@ -1290,13 +1290,13 @@ impl<'a> Parser<'a> {
 /// # #[cfg(not(feature = "func"))]
 /// assert_eq!(expr.eval(&vars).unwrap(), 16.0);  // 9 + 6 + 1
 /// # #[cfg(feature = "func")]
-/// # assert_eq!(expr.eval(&vars, &rhizome_dew_core::FunctionRegistry::new()).unwrap(), 16.0);
+/// # assert_eq!(expr.eval(&vars, &wick_core::FunctionRegistry::new()).unwrap(), 16.0);
 ///
 /// vars.insert("x".to_string(), 0.0);
 /// # #[cfg(not(feature = "func"))]
 /// assert_eq!(expr.eval(&vars).unwrap(), 1.0);   // 0 + 0 + 1
 /// # #[cfg(feature = "func")]
-/// # assert_eq!(expr.eval(&vars, &rhizome_dew_core::FunctionRegistry::new()).unwrap(), 1.0);
+/// # assert_eq!(expr.eval(&vars, &wick_core::FunctionRegistry::new()).unwrap(), 1.0);
 /// ```
 #[derive(Debug, Clone)]
 pub struct Expr {
@@ -1317,7 +1317,7 @@ impl Expr {
     /// # Example
     ///
     /// ```
-    /// use rhizome_dew_core::{Expr, ParseError};
+    /// use wick_core::{Expr, ParseError};
     ///
     /// // Valid expression
     /// assert!(Expr::parse("1 + 2").is_ok());
@@ -1353,7 +1353,7 @@ impl Expr {
     /// # Example
     ///
     /// ```
-    /// use rhizome_dew_core::Expr;
+    /// use wick_core::Expr;
     ///
     /// let expr = Expr::parse("x * 2 + y").unwrap();
     /// let vars = expr.free_vars();

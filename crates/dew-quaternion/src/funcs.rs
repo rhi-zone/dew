@@ -533,8 +533,8 @@ pub fn quaternion_registry<T: Float + std::fmt::Debug + 'static>() -> FunctionRe
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
     use std::collections::HashMap;
+    use wick_core::Expr;
 
     fn approx_eq(a: f32, b: f32) -> bool {
         (a - b).abs() < 0.0001

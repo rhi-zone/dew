@@ -4,9 +4,9 @@
 //! float3 for Vec3. HIP is source-compatible with CUDA.
 
 use crate::Type;
-use rhizome_dew_cond::hip as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_cond::hip as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// Error during HIP code generation.
 #[derive(Debug, Clone, PartialEq)]
@@ -420,7 +420,7 @@ fn emit_function_call(name: &str, args: Vec<HIPExpr>) -> Result<HIPExpr, HIPErro
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn emit(expr: &str, var_types: &[(&str, Type)]) -> Result<HIPExpr, HIPError> {
         let expr = Expr::parse(expr).unwrap();

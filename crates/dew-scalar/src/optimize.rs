@@ -6,14 +6,14 @@
 //! # Example
 //!
 //! ```
-//! use rhizome_dew_core::Expr;
-//! use rhizome_dew_core::optimize::{optimize, standard_passes};
-//! use rhizome_dew_scalar::optimize::ScalarConstantFolding;
+//! use wick_core::Expr;
+//! use wick_core::optimize::{optimize, standard_passes};
+//! use wick_scalar::optimize::ScalarConstantFolding;
 //!
 //! let expr = Expr::parse("sin(0) + cos(0)").unwrap();
 //!
 //! // Combine core passes with scalar constant folding
-//! let mut passes: Vec<&dyn rhizome_dew_core::optimize::Pass> = standard_passes();
+//! let mut passes: Vec<&dyn wick_core::optimize::Pass> = standard_passes();
 //! passes.push(&ScalarConstantFolding);
 //!
 //! let optimized = optimize(expr.ast().clone(), &passes);
@@ -21,8 +21,8 @@
 //! assert_eq!(optimized.to_string(), "1");
 //! ```
 
-use rhizome_dew_core::Ast;
-use rhizome_dew_core::optimize::Pass;
+use wick_core::Ast;
+use wick_core::optimize::Pass;
 
 /// Constant folding for scalar functions.
 ///
@@ -184,8 +184,8 @@ pub fn scalar_passes() -> Vec<&'static dyn Pass> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
-    use rhizome_dew_core::optimize::{optimize, standard_passes};
+    use wick_core::Expr;
+    use wick_core::optimize::{optimize, standard_passes};
 
     fn optimized(input: &str) -> String {
         let expr = Expr::parse(input).unwrap();
