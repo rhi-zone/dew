@@ -3,6 +3,7 @@ name = "rhizome-dew-all"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "Combined domain crate for dew expressions (linalg + complex + quaternion)"
 
 [features]
