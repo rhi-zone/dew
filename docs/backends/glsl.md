@@ -5,8 +5,8 @@ Generate OpenGL Shading Language code from dew expressions.
 ## Enable
 
 ```toml
-rhizome-dew-scalar = { version = "0.1", features = ["glsl"] }
-rhizome-dew-linalg = { version = "0.1", features = ["glsl"] }
+wick-scalar = { version = "0.1", features = ["glsl"] }
+wick-linalg = { version = "0.1", features = ["glsl"] }
 ```
 
 ## dew-scalar
@@ -14,8 +14,8 @@ rhizome-dew-linalg = { version = "0.1", features = ["glsl"] }
 ### Generate Expression
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::glsl::emit_glsl;
+use wick_core::Expr;
+use wick_scalar::glsl::emit_glsl;
 
 let expr = Expr::parse("sin(x) + cos(y)").unwrap();
 let glsl = emit_glsl(expr.ast()).unwrap();
@@ -27,7 +27,7 @@ println!("{}", glsl.code);
 ### Generate Function
 
 ```rust
-use rhizome_dew_scalar::glsl::emit_glsl_fn;
+use wick_scalar::glsl::emit_glsl_fn;
 
 let expr = Expr::parse("x * x + y * y").unwrap();
 let glsl = emit_glsl_fn("distance_squared", expr.ast(), &["x", "y"]).unwrap();
@@ -44,9 +44,9 @@ println!("{}", glsl);
 ### Generate with Types
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_linalg::glsl::emit_glsl;
-use rhizome_dew_linalg::Type;
+use wick_core::Expr;
+use wick_linalg::glsl::emit_glsl;
+use wick_linalg::Type;
 use std::collections::HashMap;
 
 let expr = Expr::parse("normalize(v) * 2.0").unwrap();

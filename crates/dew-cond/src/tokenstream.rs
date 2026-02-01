@@ -4,7 +4,7 @@
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use rhizome_dew_core::CompareOp;
+use wick_core::CompareOp;
 
 /// Emit TokenStream for a comparison operation.
 /// Returns boolean expression as TokenStream.

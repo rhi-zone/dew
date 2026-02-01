@@ -2,8 +2,8 @@
 //!
 //! Run with: cargo run --example wgsl_codegen --features wgsl
 
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::wgsl::{emit_wgsl, emit_wgsl_fn};
+use wick_core::Expr;
+use wick_scalar::wgsl::{emit_wgsl, emit_wgsl_fn};
 
 fn main() {
     let expressions = [

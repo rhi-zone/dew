@@ -1,10 +1,10 @@
 [package]
-name = "rhizome-dew-cond"
+name = "wick-cond"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Conditional and boolean support for dew expressions"
+description = "Conditional and boolean support for wick expressions"
 
 [features]
 default = []
@@ -22,7 +22,7 @@ cranelift = ["cranelift-codegen", "cranelift-frontend", "cranelift-jit", "cranel
 all = ["wgsl", "glsl", "rust", "c", "opencl", "cuda", "hip", "tokenstream", "lua", "cranelift"]
 
 [dependencies]
-rhizome-dew-core = { workspace = true, features = ["cond"] }
+wick-core = { workspace = true, features = ["cond"] }
 
 # TokenStream backend
 quote = { version = "1.0", optional = true }

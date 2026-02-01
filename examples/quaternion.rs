@@ -2,9 +2,9 @@
 //!
 //! Run with: cargo run --example quaternion
 
-use rhizome_dew_core::Expr;
-use rhizome_dew_quaternion::{Value, eval, quaternion_registry};
 use std::collections::HashMap;
+use wick_core::Expr;
+use wick_quaternion::{Value, eval, quaternion_registry};
 
 fn main() {
     let registry = quaternion_registry();

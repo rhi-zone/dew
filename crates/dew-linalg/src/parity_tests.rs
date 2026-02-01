@@ -7,9 +7,9 @@
 #[cfg(feature = "cranelift")]
 use crate::{Type, Value, eval, linalg_registry};
 #[cfg(feature = "cranelift")]
-use rhizome_dew_core::Expr;
-#[cfg(feature = "cranelift")]
 use std::collections::HashMap;
+#[cfg(feature = "cranelift")]
+use wick_core::Expr;
 
 #[cfg(feature = "cranelift")]
 use crate::cranelift::{LinalgJit, VarSpec};

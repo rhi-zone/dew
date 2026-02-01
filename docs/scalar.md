@@ -6,18 +6,18 @@ Standard scalar math functions for dew expressions.
 
 ```toml
 [dependencies]
-rhizome-dew-core = "0.1"
-rhizome-dew-scalar = "0.1"
+wick-core = "0.1"
+wick-scalar = "0.1"
 
 # Enable backends as needed
-rhizome-dew-scalar = { version = "0.1", features = ["wgsl", "glsl", "lua", "cranelift"] }
+wick-scalar = { version = "0.1", features = ["wgsl", "glsl", "lua", "cranelift"] }
 ```
 
 ## Basic Usage
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::{eval, scalar_registry};
+use wick_core::Expr;
+use wick_scalar::{eval, scalar_registry};
 use std::collections::HashMap;
 
 // Parse an expression
@@ -122,7 +122,7 @@ println!("Result: {}", result);
 Works with any `T: Numeric` (Float or Integer types):
 
 ```rust
-use rhizome_dew_scalar::{eval, scalar_registry, scalar_registry_int};
+use wick_scalar::{eval, scalar_registry, scalar_registry_int};
 
 // Floating-point (f32/f64) - full function set
 let result_f32: f32 = eval::<f32>(expr.ast(), &vars_f32, &scalar_registry()).unwrap();

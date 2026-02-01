@@ -5,8 +5,8 @@ Generate `proc_macro2::TokenStream` from dew expressions for use in Rust proc-ma
 ## Enable
 
 ```toml
-rhizome-dew-scalar = { version = "0.1", features = ["tokenstream"] }
-rhizome-dew-linalg = { version = "0.1", features = ["tokenstream"] }
+wick-scalar = { version = "0.1", features = ["tokenstream"] }
+wick-linalg = { version = "0.1", features = ["tokenstream"] }
 ```
 
 ## dew-scalar
@@ -14,8 +14,8 @@ rhizome-dew-linalg = { version = "0.1", features = ["tokenstream"] }
 ### Generate TokenStream
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::tokenstream::emit_tokenstream;
+use wick_core::Expr;
+use wick_scalar::tokenstream::emit_tokenstream;
 
 let expr = Expr::parse("sin(x) + cos(y)").unwrap();
 let tokens = emit_tokenstream(expr.ast()).unwrap();
@@ -29,9 +29,9 @@ let tokens = emit_tokenstream(expr.ast()).unwrap();
 ### Generate with Types (glam-compatible)
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_linalg::tokenstream::emit_tokenstream;
-use rhizome_dew_linalg::Type;
+use wick_core::Expr;
+use wick_linalg::tokenstream::emit_tokenstream;
+use wick_linalg::Type;
 use std::collections::HashMap;
 
 let expr = Expr::parse("normalize(v) * 2.0").unwrap();
@@ -109,8 +109,8 @@ The primary use case is generating code at compile time in procedural macros:
 ```rust
 use proc_macro::TokenStream;
 use quote::quote;
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::tokenstream::emit_tokenstream;
+use wick_core::Expr;
+use wick_scalar::tokenstream::emit_tokenstream;
 
 #[proc_macro]
 pub fn dew(input: TokenStream) -> TokenStream {

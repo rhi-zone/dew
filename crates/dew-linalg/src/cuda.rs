@@ -28,9 +28,9 @@
 //! - `mat2_mul_vec2`, `mat3_mul_vec3`, `mat4_mul_vec4` - matrix-vector multiplication
 
 use crate::Type;
-use rhizome_dew_cond::cuda as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_cond::cuda as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// Error during CUDA code generation.
 #[derive(Debug, Clone, PartialEq)]
@@ -772,7 +772,7 @@ fn extract_component(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn emit(expr: &str, var_types: &[(&str, Type)]) -> Result<CUDAExpr, CUDAError> {
         let expr = Expr::parse(expr).unwrap();

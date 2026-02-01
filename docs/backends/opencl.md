@@ -5,8 +5,8 @@ Generate OpenCL kernel code from dew expressions.
 ## Enable
 
 ```toml
-rhizome-dew-scalar = { version = "0.1", features = ["opencl"] }
-rhizome-dew-linalg = { version = "0.1", features = ["opencl"] }
+wick-scalar = { version = "0.1", features = ["opencl"] }
+wick-linalg = { version = "0.1", features = ["opencl"] }
 ```
 
 ## dew-scalar
@@ -14,8 +14,8 @@ rhizome-dew-linalg = { version = "0.1", features = ["opencl"] }
 ### Generate Expression
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::opencl::emit_opencl;
+use wick_core::Expr;
+use wick_scalar::opencl::emit_opencl;
 
 let expr = Expr::parse("sin(x) + cos(y)").unwrap();
 let ocl = emit_opencl(expr.ast()).unwrap();
@@ -27,7 +27,7 @@ println!("{}", ocl.code);
 ### Generate Kernel Function
 
 ```rust
-use rhizome_dew_scalar::opencl::emit_opencl_fn;
+use wick_scalar::opencl::emit_opencl_fn;
 
 let expr = Expr::parse("x * x + y * y").unwrap();
 let ocl = emit_opencl_fn("distance_squared", expr.ast(), &["x", "y"]).unwrap();
@@ -44,9 +44,9 @@ println!("{}", ocl);
 ### Generate with Types
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_linalg::opencl::emit_opencl;
-use rhizome_dew_linalg::Type;
+use wick_core::Expr;
+use wick_linalg::opencl::emit_opencl;
+use wick_linalg::Type;
 use std::collections::HashMap;
 
 let expr = Expr::parse("dot(a, b)").unwrap();

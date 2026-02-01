@@ -6,14 +6,14 @@
 //! # Example
 //!
 //! ```
-//! use rhizome_dew_core::Expr;
-//! use rhizome_dew_core::optimize::{optimize, standard_passes};
-//! use rhizome_dew_linalg::optimize::LinalgConstantFolding;
+//! use wick_core::Expr;
+//! use wick_core::optimize::{optimize, standard_passes};
+//! use wick_linalg::optimize::LinalgConstantFolding;
 //!
 //! let expr = Expr::parse("vec2(1, 2) + vec2(3, 4)").unwrap();
 //!
 //! // Combine core passes with linalg constant folding
-//! let mut passes: Vec<&dyn rhizome_dew_core::optimize::Pass> = standard_passes();
+//! let mut passes: Vec<&dyn wick_core::optimize::Pass> = standard_passes();
 //! passes.push(&LinalgConstantFolding);
 //!
 //! let optimized = optimize(expr.ast().clone(), &passes);
@@ -60,8 +60,8 @@
 //! The infrastructure for this exists (backends already receive type maps), but
 //! the `Pass` trait hasn't been extended yet to avoid premature abstraction.
 
-use rhizome_dew_core::optimize::Pass;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
+use wick_core::optimize::Pass;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// Constant folding for linear algebra operations.
 ///
@@ -513,8 +513,8 @@ pub fn linalg_passes() -> Vec<&'static dyn Pass> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
-    use rhizome_dew_core::optimize::{optimize, standard_passes};
+    use wick_core::Expr;
+    use wick_core::optimize::{optimize, standard_passes};
 
     fn optimized(input: &str) -> String {
         let expr = Expr::parse(input).unwrap();

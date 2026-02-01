@@ -5,8 +5,8 @@ JIT compile dew expressions to native code via Cranelift.
 ## Enable
 
 ```toml
-rhizome-dew-scalar = { version = "0.1", features = ["cranelift"] }
-rhizome-dew-linalg = { version = "0.1", features = ["cranelift"] }
+wick-scalar = { version = "0.1", features = ["cranelift"] }
+wick-linalg = { version = "0.1", features = ["cranelift"] }
 ```
 
 ## dew-scalar
@@ -14,8 +14,8 @@ rhizome-dew-linalg = { version = "0.1", features = ["cranelift"] }
 ### Compile and Execute
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::cranelift::ScalarJit;
+use wick_core::Expr;
+use wick_scalar::cranelift::ScalarJit;
 
 // Create JIT compiler
 let jit = ScalarJit::new().unwrap();
@@ -47,9 +47,9 @@ for i in 0..1000 {
 ### Compile with Types
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_linalg::cranelift::LinalgJit;
-use rhizome_dew_linalg::Type;
+use wick_core::Expr;
+use wick_linalg::cranelift::LinalgJit;
+use wick_linalg::Type;
 
 let jit = LinalgJit::new().unwrap();
 

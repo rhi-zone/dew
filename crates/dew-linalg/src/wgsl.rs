@@ -3,9 +3,9 @@
 //! Emits WGSL code with proper type handling for vectors and matrices.
 
 use crate::Type;
-use rhizome_dew_cond::wgsl as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_cond::wgsl as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// Error during WGSL code generation.
 #[derive(Debug, Clone, PartialEq)]
@@ -1018,7 +1018,7 @@ fn emit_function_call(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn emit(expr: &str, var_types: &[(&str, Type)]) -> Result<WgslExpr, WgslError> {
         let expr = Expr::parse(expr).unwrap();

@@ -1,6 +1,6 @@
 //! Lua code generation helpers for conditionals.
 
-use rhizome_dew_core::CompareOp;
+use wick_core::CompareOp;
 
 /// Emit Lua code for a comparison operation.
 /// Returns a Lua expression that evaluates to a boolean.

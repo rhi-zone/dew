@@ -6,8 +6,8 @@
 //! # Quick Start
 //!
 //! ```
-//! use rhizome_dew_core::Expr;
-//! use rhizome_dew_quaternion::{Value, eval, quaternion_registry};
+//! use wick_core::Expr;
+//! use wick_quaternion::{Value, eval, quaternion_registry};
 //! use std::collections::HashMap;
 //!
 //! // Create a rotation quaternion and normalize it
@@ -74,9 +74,9 @@
 //! with external libraries.
 
 use num_traits::Float;
-use rhizome_dew_core::{Ast, BinOp, CompareOp, UnaryOp};
 use std::collections::HashMap;
 use std::sync::Arc;
+use wick_core::{Ast, BinOp, CompareOp, UnaryOp};
 
 mod funcs;
 pub mod ops;
@@ -525,7 +525,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn eval_expr(expr: &str, vars: &[(&str, Value<f32>)]) -> Result<Value<f32>, Error> {
         let expr = Expr::parse(expr).unwrap();

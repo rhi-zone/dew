@@ -1,10 +1,10 @@
 [package]
-name = "rhizome-dew-core"
+name = "wick-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Core expression language for dew"
+description = "Core expression language for wick"
 
 [features]
 default = ["introspect"]

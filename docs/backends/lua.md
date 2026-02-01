@@ -5,8 +5,8 @@ Generate and execute Lua code from dew expressions.
 ## Enable
 
 ```toml
-rhizome-dew-scalar = { version = "0.1", features = ["lua"] }
-rhizome-dew-linalg = { version = "0.1", features = ["lua"] }
+wick-scalar = { version = "0.1", features = ["lua"] }
+wick-linalg = { version = "0.1", features = ["lua"] }
 ```
 
 ## dew-scalar
@@ -14,8 +14,8 @@ rhizome-dew-linalg = { version = "0.1", features = ["lua"] }
 ### Generate Lua Code
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::lua::emit_lua;
+use wick_core::Expr;
+use wick_scalar::lua::emit_lua;
 
 let expr = Expr::parse("sin(x) + cos(y)").unwrap();
 let lua_code = emit_lua(expr.ast()).unwrap();
@@ -27,7 +27,7 @@ println!("{}", lua_code.code);
 ### Generate Function
 
 ```rust
-use rhizome_dew_scalar::lua::emit_lua_fn;
+use wick_scalar::lua::emit_lua_fn;
 
 let expr = Expr::parse("x * x + y * y").unwrap();
 let lua_fn = emit_lua_fn("distance_squared", expr.ast(), &["x", "y"]).unwrap();
@@ -42,8 +42,8 @@ println!("{}", lua_fn);
 ### Execute Directly
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::lua::eval_lua;
+use wick_core::Expr;
+use wick_scalar::lua::eval_lua;
 use std::collections::HashMap;
 
 let expr = Expr::parse("sin(x) * 2").unwrap();
@@ -60,9 +60,9 @@ println!("Result: {}", result);
 ### Generate with Types
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_linalg::lua::emit_lua;
-use rhizome_dew_linalg::Type;
+use wick_core::Expr;
+use wick_linalg::lua::emit_lua;
+use wick_linalg::Type;
 use std::collections::HashMap;
 
 let expr = Expr::parse("dot(a, b)").unwrap();
@@ -79,8 +79,8 @@ println!("{}", result.code);
 ### Execute with Values
 
 ```rust
-use rhizome_dew_linalg::lua::eval_lua;
-use rhizome_dew_linalg::Value;
+use wick_linalg::lua::eval_lua;
+use wick_linalg::Value;
 
 let expr = Expr::parse("length(v)").unwrap();
 

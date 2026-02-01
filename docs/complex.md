@@ -6,18 +6,18 @@ Complex number support for dew expressions. Useful for signal processing, 2D rot
 
 ```toml
 [dependencies]
-rhizome-dew-core = "0.1"
-rhizome-dew-complex = "0.1"
+wick-core = "0.1"
+wick-complex = "0.1"
 
 # Enable backends as needed
-rhizome-dew-complex = { version = "0.1", features = ["wgsl", "glsl", "lua", "cranelift"] }
+wick-complex = { version = "0.1", features = ["wgsl", "glsl", "lua", "cranelift"] }
 ```
 
 ## Basic Usage
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_complex::{Value, eval, complex_registry};
+use wick_core::Expr;
+use wick_complex::{Value, eval, complex_registry};
 use std::collections::HashMap;
 
 // Parse an expression

@@ -4,7 +4,7 @@
 
 use crate::{Error, QuaternionValue, Type};
 use num_traits::Float;
-use rhizome_dew_core::{BinOp, UnaryOp};
+use wick_core::{BinOp, UnaryOp};
 
 /// Apply a binary operation to two values.
 pub fn apply_binop<T, V>(op: BinOp, left: V, right: V) -> Result<V, Error>

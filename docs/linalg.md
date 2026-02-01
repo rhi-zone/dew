@@ -6,11 +6,11 @@ Linear algebra types and operations for dew expressions.
 
 ```toml
 [dependencies]
-rhizome-dew-core = "0.1"
-rhizome-dew-linalg = "0.1"
+wick-core = "0.1"
+wick-linalg = "0.1"
 
 # Features
-rhizome-dew-linalg = { version = "0.1", features = ["3d", "4d", "wgsl", "glsl"] }
+wick-linalg = { version = "0.1", features = ["3d", "4d", "wgsl", "glsl"] }
 ```
 
 ### Features
@@ -27,8 +27,8 @@ rhizome-dew-linalg = { version = "0.1", features = ["3d", "4d", "wgsl", "glsl"] 
 ## Basic Usage
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_linalg::{Value, eval, linalg_registry};
+use wick_core::Expr;
+use wick_linalg::{Value, eval, linalg_registry};
 use std::collections::HashMap;
 
 // Parse an expression
@@ -154,7 +154,7 @@ let result = eval(expr.ast(), &vars, &registry).unwrap();
 Works with floating-point (f32, f64) or integer (i32, i64) types:
 
 ```rust
-use rhizome_dew_linalg::{eval, linalg_registry, linalg_registry_int, Value};
+use wick_linalg::{eval, linalg_registry, linalg_registry_int, Value};
 
 // f64 precision (full function set)
 let mut vars: HashMap<String, Value<f64>> = HashMap::new();

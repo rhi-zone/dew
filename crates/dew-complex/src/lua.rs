@@ -3,9 +3,9 @@
 //! Complex numbers are represented as tables {real, imag}.
 
 use crate::Type;
-use rhizome_dew_cond::lua as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_cond::lua as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// Error during Lua code generation.
 #[derive(Debug, Clone, PartialEq)]
@@ -555,7 +555,7 @@ impl std::error::Error for EvalError {}
 #[cfg(feature = "lua")]
 /// Compiles and evaluates an expression with mlua.
 pub fn eval_lua<T: num_traits::Float + mlua::IntoLua + mlua::FromLua>(
-    ast: &rhizome_dew_core::Ast,
+    ast: &wick_core::Ast,
     vars: &HashMap<String, Value<T>>,
 ) -> Result<Value<T>, EvalError> {
     use mlua::Value as LuaValue;
@@ -646,7 +646,7 @@ fn lua_to_value<T: num_traits::Float + mlua::FromLua>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn emit(expr: &str, var_types: &[(&str, Type)]) -> Result<LuaExpr, LuaError> {
         let expr = Expr::parse(expr).unwrap();

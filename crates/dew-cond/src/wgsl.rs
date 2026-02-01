@@ -1,6 +1,6 @@
 //! WGSL code generation helpers for conditionals.
 
-use rhizome_dew_core::CompareOp;
+use wick_core::CompareOp;
 
 /// Emit WGSL code for a comparison operation.
 /// Returns boolean expression as string.

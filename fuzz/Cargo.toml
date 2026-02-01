@@ -11,23 +11,23 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 arbitrary = { version = "1", features = ["derive"] }
 
-[dependencies.rhizome-dew-core]
+[dependencies.wick-core]
 path = "../crates/dew-core"
 features = ["cond", "func"]
 
-[dependencies.rhizome-dew-scalar]
+[dependencies.wick-scalar]
 path = "../crates/dew-scalar"
 features = ["lua", "cranelift"]
 
-[dependencies.rhizome-dew-linalg]
+[dependencies.wick-linalg]
 path = "../crates/dew-linalg"
 features = ["lua", "cranelift"]
 
-[dependencies.rhizome-dew-complex]
+[dependencies.wick-complex]
 path = "../crates/dew-complex"
 features = ["lua", "cranelift"]
 
-[dependencies.rhizome-dew-quaternion]
+[dependencies.wick-quaternion]
 path = "../crates/dew-quaternion"
 features = ["lua", "cranelift"]
 

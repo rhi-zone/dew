@@ -2,8 +2,8 @@
 //!
 //! Compiles expression ASTs to Lua code and optionally executes via mlua.
 
-use rhizome_dew_cond::lua as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
+use wick_cond::lua as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 #[cfg(feature = "lua")]
 use std::collections::HashMap;
@@ -356,7 +356,7 @@ impl std::error::Error for EvalError {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn compile(input: &str) -> String {
         let expr = Expr::parse(input).unwrap();

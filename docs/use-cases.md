@@ -29,7 +29,7 @@ fn noise_octaves(p: vec2<f32>, octaves: i32) -> f32 {
 
 **After (Dew):**
 ```rust
-use rhizome_dew_linalg::{emit_wgsl, Type};
+use wick_linalg::{emit_wgsl, Type};
 
 // Define expression once
 let expr = Expr::parse(r#"
@@ -92,7 +92,7 @@ let expr = Expr::parse(r#"
 Complex numbers in Dew are perfect for frequency-domain audio processing.
 
 ```rust
-use rhizome_dew_complex::{Value, eval, complex_registry};
+use wick_complex::{Value, eval, complex_registry};
 
 // Frequency response of a low-pass filter
 let expr = Expr::parse(r#"
@@ -135,7 +135,7 @@ let expr = Expr::parse(r#"
 Smooth camera transitions or skeletal animation.
 
 ```rust
-use rhizome_dew_quaternion::{Value, eval, quaternion_registry};
+use wick_quaternion::{Value, eval, quaternion_registry};
 
 // Camera interpolation
 let expr = Expr::parse(r#"
@@ -184,7 +184,7 @@ let expr = Expr::parse(r#"
 ### Hot-Reloadable Logic with Lua Backend
 
 ```rust
-use rhizome_dew_scalar::{emit_lua, eval_lua, scalar_registry};
+use wick_scalar::{emit_lua, eval_lua, scalar_registry};
 
 // Define game logic expression
 let damage_formula = Expr::parse(r#"
@@ -345,7 +345,7 @@ let wgsl = emit_wgsl(expr.ast(), &var_types).unwrap();
 ### Expression Caching
 
 ```rust
-use rhizome_dew_core::optimize::{optimize, standard_passes};
+use wick_core::optimize::{optimize, standard_passes};
 use std::collections::HashMap;
 
 struct ExpressionCache {

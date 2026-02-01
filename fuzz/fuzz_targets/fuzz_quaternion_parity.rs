@@ -9,8 +9,8 @@
 
 use arbitrary::{Arbitrary, Unstructured};
 use libfuzzer_sys::fuzz_target;
-use rhizome_dew_core::Expr;
-use rhizome_dew_quaternion::{quaternion_registry, cranelift::{QuaternionJit, VarSpec}, lua::eval_lua, Value};
+use wick_core::Expr;
+use wick_quaternion::{quaternion_registry, cranelift::{QuaternionJit, VarSpec}, lua::eval_lua, Value};
 use std::collections::HashMap;
 
 /// Types in the quaternion domain.
@@ -380,7 +380,7 @@ fuzz_target!(|input: QuaternionParityInput| {
     let registry = quaternion_registry::<f32>();
 
     // 1. Direct eval (interpreter)
-    let Ok(eval_val) = rhizome_dew_quaternion::eval(expr.ast(), &var_map, &registry) else {
+    let Ok(eval_val) = wick_quaternion::eval(expr.ast(), &var_map, &registry) else {
         return;
     };
 

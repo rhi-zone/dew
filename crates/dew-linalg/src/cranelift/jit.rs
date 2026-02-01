@@ -14,8 +14,8 @@ use cranelift_codegen::ir::{AbiParam, InstBuilder, MemFlags, Value as CraneliftV
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{Linkage, Module};
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 // ============================================================================
 // JIT Compiler

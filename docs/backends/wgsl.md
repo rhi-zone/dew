@@ -5,8 +5,8 @@ Generate WebGPU Shading Language code from dew expressions.
 ## Enable
 
 ```toml
-rhizome-dew-scalar = { version = "0.1", features = ["wgsl"] }
-rhizome-dew-linalg = { version = "0.1", features = ["wgsl"] }
+wick-scalar = { version = "0.1", features = ["wgsl"] }
+wick-linalg = { version = "0.1", features = ["wgsl"] }
 ```
 
 ## dew-scalar
@@ -14,8 +14,8 @@ rhizome-dew-linalg = { version = "0.1", features = ["wgsl"] }
 ### Generate Expression
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::wgsl::emit_wgsl;
+use wick_core::Expr;
+use wick_scalar::wgsl::emit_wgsl;
 
 let expr = Expr::parse("sin(x) + cos(y)").unwrap();
 let wgsl = emit_wgsl(expr.ast()).unwrap();
@@ -27,7 +27,7 @@ println!("{}", wgsl.code);
 ### Generate Function
 
 ```rust
-use rhizome_dew_scalar::wgsl::emit_wgsl_fn;
+use wick_scalar::wgsl::emit_wgsl_fn;
 
 let expr = Expr::parse("x * x + y * y").unwrap();
 let wgsl = emit_wgsl_fn("distance_squared", expr.ast(), &["x", "y"]).unwrap();
@@ -44,9 +44,9 @@ println!("{}", wgsl);
 ### Generate with Types
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_linalg::wgsl::emit_wgsl;
-use rhizome_dew_linalg::Type;
+use wick_core::Expr;
+use wick_linalg::wgsl::emit_wgsl;
+use wick_linalg::Type;
 use std::collections::HashMap;
 
 let expr = Expr::parse("normalize(v) * 2.0").unwrap();

@@ -2,8 +2,8 @@
 //!
 //! Compiles expression ASTs to WGSL shader code.
 
-use rhizome_dew_cond::wgsl as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
+use wick_cond::wgsl as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 // ============================================================================
 // Errors
@@ -368,7 +368,7 @@ fn format_float(n: f64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn compile(input: &str) -> String {
         let expr = Expr::parse(input).unwrap();

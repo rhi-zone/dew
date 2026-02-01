@@ -11,8 +11,8 @@
 
 use arbitrary::{Arbitrary, Unstructured};
 use libfuzzer_sys::fuzz_target;
-use rhizome_dew_core::Expr;
-use rhizome_dew_linalg::{linalg_registry, cranelift::{LinalgJit, VarSpec}, lua::eval_lua, Value};
+use wick_core::Expr;
+use wick_linalg::{linalg_registry, cranelift::{LinalgJit, VarSpec}, lua::eval_lua, Value};
 use std::collections::HashMap;
 
 /// Types in the linalg domain.
@@ -540,7 +540,7 @@ fuzz_target!(|input: LinalgParityInput| {
     let registry = linalg_registry::<f32>();
 
     // 1. Direct eval (interpreter)
-    let Ok(eval_val) = rhizome_dew_linalg::eval(expr.ast(), &var_map, &registry) else {
+    let Ok(eval_val) = wick_linalg::eval(expr.ast(), &var_map, &registry) else {
         return;
     };
 

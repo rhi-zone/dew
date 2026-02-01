@@ -5,7 +5,7 @@
 //! - `select(else_val, then_val, cond)` for vectorized conditionals
 //! - Standard C ternary operator for scalar conditionals
 
-use rhizome_dew_core::CompareOp;
+use wick_core::CompareOp;
 
 /// Emit OpenCL code for a comparison operation.
 /// Returns boolean expression (evaluates to 0 or 1).

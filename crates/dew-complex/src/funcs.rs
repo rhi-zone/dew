@@ -496,8 +496,8 @@ pub fn complex_registry<T: Float + std::fmt::Debug + 'static>() -> FunctionRegis
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
     use std::collections::HashMap;
+    use wick_core::Expr;
 
     fn eval_expr(expr: &str, vars: &[(&str, Value<f32>)]) -> Value<f32> {
         let expr = Expr::parse(expr).unwrap();

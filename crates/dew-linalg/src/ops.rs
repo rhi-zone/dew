@@ -1,7 +1,7 @@
 //! Binary and unary operations with type dispatch.
 
 use crate::{Error, LinalgValue, Type};
-use rhizome_dew_core::{BinOp, Numeric, UnaryOp};
+use wick_core::{BinOp, Numeric, UnaryOp};
 
 /// Apply a binary operation to two values.
 pub fn apply_binop<T, V>(op: BinOp, left: V, right: V) -> Result<V, Error>

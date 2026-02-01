@@ -12,16 +12,16 @@ Integrate Dew for hot-reloadable game logic or GPU compute shaders.
 ```toml
 [dependencies]
 bevy = "0.12"
-rhizome-dew-core = { version = "0.1", features = ["cond", "func"] }
-rhizome-dew-scalar = { version = "0.1", features = ["lua", "wgsl"] }
-rhizome-dew-linalg = { version = "0.1", features = ["3d", "wgsl"] }
+wick-core = { version = "0.1", features = ["cond", "func"] }
+wick-scalar = { version = "0.1", features = ["lua", "wgsl"] }
+wick-linalg = { version = "0.1", features = ["3d", "wgsl"] }
 ```
 
 **Hot-Reloadable Damage Formula:**
 ```rust
 use bevy::prelude::*;
-use rhizome_dew_core::Expr;
-use rhizome_dew_scalar::{eval, scalar_registry};
+use wick_core::Expr;
+use wick_scalar::{eval, scalar_registry};
 
 #[derive(Resource)]
 struct GameFormulas {
@@ -60,7 +60,7 @@ fn calculate_damage(
 **WGSL Compute Shader:**
 ```rust
 use bevy::render::render_resource::*;
-use rhizome_dew_linalg::{emit_wgsl, Type};
+use wick_linalg::{emit_wgsl, Type};
 
 fn create_particle_shader(device: &RenderDevice) -> ShaderModule {
     // Define particle update logic
@@ -106,7 +106,7 @@ fn create_particle_shader(device: &RenderDevice) -> ShaderModule {
 
 **Resource Loading:**
 ```rust
-use rhizome_dew_core::Expr;
+use wick_core::Expr;
 use std::collections::HashMap;
 
 struct ExpressionAsset {
@@ -143,7 +143,7 @@ impl AssetLoader for ExpressionLoader {
 **Rust (WASM):**
 ```rust
 use wasm_bindgen::prelude::*;
-use rhizome_dew_scalar::{eval, scalar_registry};
+use wick_scalar::{eval, scalar_registry};
 
 #[wasm_bindgen]
 pub struct DewEngine {
@@ -224,7 +224,7 @@ const shaderModule = device.createShaderModule({
 
 **Shader Generation Pipeline:**
 ```rust
-use rhizome_dew_linalg::{emit_wgsl, Type};
+use wick_linalg::{emit_wgsl, Type};
 use wgpu::*;
 
 struct ComputePipeline {
@@ -306,7 +306,7 @@ impl ComputePipeline {
 ### OpenGL (via GLSL)
 
 ```rust
-use rhizome_dew_linalg::emit_glsl;
+use wick_linalg::emit_glsl;
 
 fn create_gl_shader(expr: &Ast, var_types: &HashMap<String, Type>) -> String {
     let glsl = emit_glsl(expr, var_types).unwrap();
@@ -338,7 +338,7 @@ fn create_gl_shader(expr: &Ast, var_types: &HashMap<String, Type>) -> String {
 The C backend generates code for embedding in C/C++ projects with custom math libraries.
 
 ```rust
-use rhizome_dew_linalg::{emit_c, emit_c_fn, Type};
+use wick_linalg::{emit_c, emit_c_fn, Type};
 
 // Generate inline expression
 let expr = Expr::parse("dot(a, b) + length(c)").unwrap();
@@ -386,7 +386,7 @@ vec3 vec3_cross(vec3 a, vec3 b);
 
 ```rust
 use cpal::traits::*;
-use rhizome_dew_complex::{eval_lua, Value, complex_registry};
+use wick_complex::{eval_lua, Value, complex_registry};
 
 struct AudioProcessor {
     expr: Expr,
@@ -440,8 +440,8 @@ let stream = device.build_output_stream(
 
 ```toml
 [dependencies]
-rhizome-dew-core = { version = "0.1", default-features = false, features = ["func"] }
-rhizome-dew-scalar = { version = "0.1", default-features = false }
+wick-core = { version = "0.1", default-features = false, features = ["func"] }
+wick-scalar = { version = "0.1", default-features = false }
 ```
 
 **Microcontroller Example:**
@@ -449,7 +449,7 @@ rhizome-dew-scalar = { version = "0.1", default-features = false }
 #![no_std]
 #![no_main]
 
-use rhizome_dew_scalar::{eval, scalar_registry_int};
+use wick_scalar::{eval, scalar_registry_int};
 
 #[entry]
 fn main() -> ! {
@@ -477,7 +477,7 @@ fn main() -> ! {
 For systems with a Lua interpreter:
 
 ```rust
-use rhizome_dew_scalar::emit_lua_code;
+use wick_scalar::emit_lua_code;
 
 // Generate Lua code once
 let lua_code = emit_lua_code(expr.ast(), &var_types).unwrap();
@@ -499,7 +499,7 @@ std::fs::write("sensor_logic.lua", format!(r#"
 
 ```rust
 use proptest::prelude::*;
-use rhizome_dew_linalg::{eval, emit_wgsl, Type};
+use wick_linalg::{eval, emit_wgsl, Type};
 
 proptest! {
     #[test]
@@ -641,7 +641,7 @@ impl OptimizedExpressions {
 ### User-Defined Functions
 
 ```rust
-use rhizome_dew_core::{ExprFn, FunctionRegistry};
+use wick_core::{ExprFn, FunctionRegistry};
 
 // Allow users to register custom functions
 pub struct PluginRegistry<T> {

@@ -6,8 +6,8 @@
 //! # Quick Start
 //!
 //! ```
-//! use rhizome_dew_core::Expr;
-//! use rhizome_dew_linalg::{Value, eval, linalg_registry};
+//! use wick_core::Expr;
+//! use wick_linalg::{Value, eval, linalg_registry};
 //! use std::collections::HashMap;
 //!
 //! let expr = Expr::parse("dot(a, b)").unwrap();
@@ -74,9 +74,9 @@
 //! For composing multiple domain crates (e.g., linalg + rotors), the [`LinalgValue`]
 //! trait allows defining a combined value type that works with both crates.
 
-use rhizome_dew_core::{Ast, BinOp, CompareOp, Numeric, UnaryOp};
 use std::collections::HashMap;
 use std::sync::Arc;
+use wick_core::{Ast, BinOp, CompareOp, Numeric, UnaryOp};
 
 mod funcs;
 pub mod ops;
@@ -641,7 +641,7 @@ mod parity_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn eval_expr(expr: &str, vars: &[(&str, Value<f32>)]) -> Result<Value<f32>, Error> {
         let expr = Expr::parse(expr).unwrap();

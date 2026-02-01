@@ -53,7 +53,7 @@ interface DewWasm {
 // Load WASM module
 async function loadWasm(): Promise<DewWasm | null> {
   try {
-    const wasm = await import('./wasm/rhizome_dew_wasm.js');
+    const wasm = await import('./wasm/wick_wasm.js');
     await wasm.default();
     return {
       parse: wasm.parse,

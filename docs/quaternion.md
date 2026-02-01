@@ -6,18 +6,18 @@ Quaternion support for dew expressions. Essential for 3D rotations, avoiding gim
 
 ```toml
 [dependencies]
-rhizome-dew-core = "0.1"
-rhizome-dew-quaternion = "0.1"
+wick-core = "0.1"
+wick-quaternion = "0.1"
 
 # Enable backends as needed
-rhizome-dew-quaternion = { version = "0.1", features = ["wgsl", "glsl", "lua", "cranelift"] }
+wick-quaternion = { version = "0.1", features = ["wgsl", "glsl", "lua", "cranelift"] }
 ```
 
 ## Basic Usage
 
 ```rust
-use rhizome_dew_core::Expr;
-use rhizome_dew_quaternion::{Value, eval, quaternion_registry};
+use wick_core::Expr;
+use wick_quaternion::{Value, eval, quaternion_registry};
 use std::collections::HashMap;
 
 // Parse an expression

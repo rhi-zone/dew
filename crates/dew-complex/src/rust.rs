@@ -3,9 +3,9 @@
 //! Complex numbers are represented using num_complex::Complex32 (Complex<f32>).
 
 use crate::Type;
-use rhizome_dew_cond::rust as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_cond::rust as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// Error during Rust code generation.
 #[derive(Debug, Clone, PartialEq)]
@@ -546,7 +546,7 @@ fn emit_function_call(name: &str, args: Vec<RustExpr>) -> Result<RustExpr, RustE
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn emit(expr: &str, var_types: &[(&str, Type)]) -> Result<RustExpr, RustError> {
         let expr = Expr::parse(expr).unwrap();

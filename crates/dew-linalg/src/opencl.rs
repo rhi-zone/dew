@@ -4,9 +4,9 @@
 //! Matrix operations use function-based API (matrices aren't built-in).
 
 use crate::Type;
-use rhizome_dew_cond::opencl as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_cond::opencl as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// Error during OpenCL code generation.
 #[derive(Debug, Clone, PartialEq)]
@@ -751,7 +751,7 @@ fn emit_function_call(name: &str, args: Vec<OpenCLExpr>) -> Result<OpenCLExpr, O
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn emit(expr: &str, var_types: &[(&str, Type)]) -> Result<OpenCLExpr, OpenCLError> {
         let expr = Expr::parse(expr).unwrap();

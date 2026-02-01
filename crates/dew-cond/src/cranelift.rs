@@ -3,7 +3,7 @@
 use cranelift_codegen::ir::condcodes::FloatCC;
 use cranelift_codegen::ir::{InstBuilder, Value};
 use cranelift_frontend::FunctionBuilder;
-use rhizome_dew_core::CompareOp;
+use wick_core::CompareOp;
 
 /// Emit Cranelift IR for a comparison operation.
 /// Returns a boolean value (i8).

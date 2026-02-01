@@ -4,9 +4,9 @@
 //! Vectors are tables {x, y, z}.
 
 use crate::Type;
-use rhizome_dew_cond::lua as cond;
-use rhizome_dew_core::{Ast, BinOp, UnaryOp};
 use std::collections::HashMap;
+use wick_cond::lua as cond;
+use wick_core::{Ast, BinOp, UnaryOp};
 
 /// Error during Lua code generation.
 #[derive(Debug, Clone, PartialEq)]
@@ -822,7 +822,7 @@ fn lua_to_value<T: num_traits::Float + mlua::FromLua>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rhizome_dew_core::Expr;
+    use wick_core::Expr;
 
     fn emit(expr: &str, var_types: &[(&str, Type)]) -> Result<LuaExpr, LuaError> {
         let expr = Expr::parse(expr).unwrap();

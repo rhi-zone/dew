@@ -6,7 +6,7 @@
 //! # Quick Start
 //!
 //! ```
-//! use rhizome_dew_all::Value;
+//! use wick_all::Value;
 //!
 //! // The combined Value can hold any domain type
 //! let scalar: Value<f32> = Value::Scalar(1.0);
@@ -21,14 +21,14 @@
 //! domain-specific `eval` functions:
 //!
 //! ```
-//! use rhizome_dew_all::Value;
-//! use rhizome_dew_core::Expr;
+//! use wick_all::Value;
+//! use wick_core::Expr;
 //! use std::collections::HashMap;
 //!
 //! // Use linalg eval with combined Value
 //! # #[cfg(feature = "linalg")]
 //! # {
-//! use rhizome_dew_linalg::{eval, linalg_registry, LinalgValue};
+//! use wick_linalg::{eval, linalg_registry, LinalgValue};
 //!
 //! let expr = Expr::parse("dot(a, b)").unwrap();
 //! let vars: HashMap<String, Value<f32>> = [
@@ -37,8 +37,8 @@
 //! ].into();
 //!
 //! // Create a registry for our combined Value type
-//! let mut registry = rhizome_dew_linalg::FunctionRegistry::new();
-//! rhizome_dew_linalg::register_linalg(&mut registry);
+//! let mut registry = wick_linalg::FunctionRegistry::new();
+//! wick_linalg::register_linalg(&mut registry);
 //!
 //! let result = eval(expr.ast(), &vars, &registry).unwrap();
 //! assert_eq!(result, Value::Scalar(1.0));
@@ -63,16 +63,16 @@ use num_traits::Float;
 
 // Re-export domain crates for convenience
 #[cfg(feature = "scalar")]
-pub use rhizome_dew_scalar;
+pub use wick_scalar;
 
 #[cfg(feature = "linalg")]
-pub use rhizome_dew_linalg;
+pub use wick_linalg;
 
 #[cfg(feature = "complex")]
-pub use rhizome_dew_complex;
+pub use wick_complex;
 
 #[cfg(feature = "quaternion")]
-pub use rhizome_dew_quaternion;
+pub use wick_quaternion;
 
 // ============================================================================
 // Combined Type enum
@@ -246,17 +246,17 @@ impl<T: Copy> Value<T> {
 // ============================================================================
 
 #[cfg(feature = "linalg")]
-impl<T: Float + rhizome_dew_core::Numeric> rhizome_dew_linalg::LinalgValue<T> for Value<T> {
-    fn typ(&self) -> rhizome_dew_linalg::Type {
+impl<T: Float + wick_core::Numeric> wick_linalg::LinalgValue<T> for Value<T> {
+    fn typ(&self) -> wick_linalg::Type {
         match self {
-            Value::Scalar(_) => rhizome_dew_linalg::Type::Scalar,
-            Value::Vec2(_) => rhizome_dew_linalg::Type::Vec2,
-            Value::Vec3(_) => rhizome_dew_linalg::Type::Vec3,
-            Value::Vec4(_) => rhizome_dew_linalg::Type::Vec4,
-            Value::Mat2(_) => rhizome_dew_linalg::Type::Mat2,
-            Value::Mat3(_) => rhizome_dew_linalg::Type::Mat3,
-            Value::Mat4(_) => rhizome_dew_linalg::Type::Mat4,
-            _ => rhizome_dew_linalg::Type::Scalar, // fallback for non-linalg types
+            Value::Scalar(_) => wick_linalg::Type::Scalar,
+            Value::Vec2(_) => wick_linalg::Type::Vec2,
+            Value::Vec3(_) => wick_linalg::Type::Vec3,
+            Value::Vec4(_) => wick_linalg::Type::Vec4,
+            Value::Mat2(_) => wick_linalg::Type::Mat2,
+            Value::Mat3(_) => wick_linalg::Type::Mat3,
+            Value::Mat4(_) => wick_linalg::Type::Mat4,
+            _ => wick_linalg::Type::Scalar, // fallback for non-linalg types
         }
     }
 
@@ -310,12 +310,12 @@ impl<T: Float + rhizome_dew_core::Numeric> rhizome_dew_linalg::LinalgValue<T> fo
 // ============================================================================
 
 #[cfg(feature = "complex")]
-impl<T: Float + std::fmt::Debug> rhizome_dew_complex::ComplexValue<T> for Value<T> {
-    fn typ(&self) -> rhizome_dew_complex::Type {
+impl<T: Float + std::fmt::Debug> wick_complex::ComplexValue<T> for Value<T> {
+    fn typ(&self) -> wick_complex::Type {
         match self {
-            Value::Scalar(_) => rhizome_dew_complex::Type::Scalar,
-            Value::Complex(_) => rhizome_dew_complex::Type::Complex,
-            _ => rhizome_dew_complex::Type::Scalar, // fallback for non-complex types
+            Value::Scalar(_) => wick_complex::Type::Scalar,
+            Value::Complex(_) => wick_complex::Type::Complex,
+            _ => wick_complex::Type::Scalar, // fallback for non-complex types
         }
     }
 
@@ -339,13 +339,13 @@ impl<T: Float + std::fmt::Debug> rhizome_dew_complex::ComplexValue<T> for Value<
 // ============================================================================
 
 #[cfg(feature = "quaternion")]
-impl<T: Float + std::fmt::Debug> rhizome_dew_quaternion::QuaternionValue<T> for Value<T> {
-    fn typ(&self) -> rhizome_dew_quaternion::Type {
+impl<T: Float + std::fmt::Debug> wick_quaternion::QuaternionValue<T> for Value<T> {
+    fn typ(&self) -> wick_quaternion::Type {
         match self {
-            Value::Scalar(_) => rhizome_dew_quaternion::Type::Scalar,
-            Value::Vec3(_) => rhizome_dew_quaternion::Type::Vec3,
-            Value::Quaternion(_) => rhizome_dew_quaternion::Type::Quaternion,
-            _ => rhizome_dew_quaternion::Type::Scalar, // fallback for non-quaternion types
+            Value::Scalar(_) => wick_quaternion::Type::Scalar,
+            Value::Vec3(_) => wick_quaternion::Type::Vec3,
+            Value::Quaternion(_) => wick_quaternion::Type::Quaternion,
+            _ => wick_quaternion::Type::Scalar, // fallback for non-quaternion types
         }
     }
 
@@ -400,8 +400,8 @@ mod tests {
     #[test]
     #[cfg(feature = "linalg")]
     fn test_linalg_eval_with_combined_value() {
-        use rhizome_dew_core::Expr;
         use std::collections::HashMap;
+        use wick_core::Expr;
 
         let expr = Expr::parse("dot(a, b)").unwrap();
         let vars: HashMap<String, Value<f32>> = [
@@ -410,34 +410,34 @@ mod tests {
         ]
         .into();
 
-        let mut registry = rhizome_dew_linalg::FunctionRegistry::new();
-        rhizome_dew_linalg::register_linalg(&mut registry);
+        let mut registry = wick_linalg::FunctionRegistry::new();
+        wick_linalg::register_linalg(&mut registry);
 
-        let result = rhizome_dew_linalg::eval(expr.ast(), &vars, &registry).unwrap();
+        let result = wick_linalg::eval(expr.ast(), &vars, &registry).unwrap();
         assert_eq!(result, Value::Scalar(1.0));
     }
 
     #[test]
     #[cfg(feature = "complex")]
     fn test_complex_eval_with_combined_value() {
-        use rhizome_dew_core::Expr;
         use std::collections::HashMap;
+        use wick_core::Expr;
 
         let expr = Expr::parse("abs(z)").unwrap();
         let vars: HashMap<String, Value<f32>> = [("z".into(), Value::Complex([3.0, 4.0]))].into();
 
-        let mut registry = rhizome_dew_complex::FunctionRegistry::new();
-        rhizome_dew_complex::register_complex(&mut registry);
+        let mut registry = wick_complex::FunctionRegistry::new();
+        wick_complex::register_complex(&mut registry);
 
-        let result = rhizome_dew_complex::eval(expr.ast(), &vars, &registry).unwrap();
+        let result = wick_complex::eval(expr.ast(), &vars, &registry).unwrap();
         assert_eq!(result, Value::Scalar(5.0));
     }
 
     #[test]
     #[cfg(feature = "quaternion")]
     fn test_quaternion_eval_with_combined_value() {
-        use rhizome_dew_core::Expr;
         use std::collections::HashMap;
+        use wick_core::Expr;
 
         let expr = Expr::parse("rotate(v, q)").unwrap();
         let vars: HashMap<String, Value<f32>> = [
@@ -446,10 +446,10 @@ mod tests {
         ]
         .into();
 
-        let mut registry = rhizome_dew_quaternion::FunctionRegistry::new();
-        rhizome_dew_quaternion::register_quaternion(&mut registry);
+        let mut registry = wick_quaternion::FunctionRegistry::new();
+        wick_quaternion::register_quaternion(&mut registry);
 
-        let result = rhizome_dew_quaternion::eval(expr.ast(), &vars, &registry).unwrap();
+        let result = wick_quaternion::eval(expr.ast(), &vars, &registry).unwrap();
         assert_eq!(result, Value::Vec3([1.0, 0.0, 0.0]));
     }
 }

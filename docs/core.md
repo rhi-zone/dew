@@ -6,10 +6,10 @@ The foundational crate providing the AST, parser, and base types for dew express
 
 ```toml
 [dependencies]
-rhizome-dew-core = "0.1"
+wick-core = "0.1"
 
 # Enable optional features
-rhizome-dew-core = { version = "0.1", features = ["cond", "func"] }
+wick-core = { version = "0.1", features = ["cond", "func"] }
 ```
 
 ## Features
@@ -28,7 +28,7 @@ dew-core provides opt-in features to manage complexity:
 Without any features, you get a minimal expression language:
 
 ```rust
-use rhizome_dew_core::Expr;
+use wick_core::Expr;
 use std::collections::HashMap;
 
 // Parse an arithmetic expression
@@ -106,7 +106,7 @@ let a = x * 2; let b = a + 1; b * b
 
 Example:
 ```rust
-use rhizome_dew_core::Expr;
+use wick_core::Expr;
 use std::collections::HashMap;
 
 let expr = Expr::parse("let t = x * 2 + 1; sin(t) * cos(t)").unwrap();
@@ -127,7 +127,7 @@ Let bindings:
 Enable with `features = ["cond"]`:
 
 ```rust
-use rhizome_dew_core::Expr;
+use wick_core::Expr;
 use std::collections::HashMap;
 
 let expr = Expr::parse("if x > 0 then x else -x").unwrap();
@@ -168,7 +168,7 @@ Boolean results are represented as scalars: 0.0 = false, 1.0 = true.
 Enable with `features = ["func"]`:
 
 ```rust
-use rhizome_dew_core::{Expr, ExprFn, FunctionRegistry};
+use wick_core::{Expr, ExprFn, FunctionRegistry};
 use std::collections::HashMap;
 
 // Define a custom function
@@ -241,8 +241,8 @@ let result = expr.eval(&empty_vars);
 Enable with `features = ["optimize"]`:
 
 ```rust
-use rhizome_dew_core::{Expr, Ast};
-use rhizome_dew_core::optimize::{optimize, standard_passes};
+use wick_core::{Expr, Ast};
+use wick_core::optimize::{optimize, standard_passes};
 
 let expr = Expr::parse("(1 + 2) * x + 0").unwrap();
 let optimized = optimize(expr.ast().clone(), &standard_passes());
