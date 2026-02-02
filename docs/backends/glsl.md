@@ -1,6 +1,6 @@
 # GLSL Backend
 
-Generate OpenGL Shading Language code from dew expressions.
+Generate OpenGL Shading Language code from wick expressions.
 
 ## Enable
 
@@ -9,7 +9,7 @@ wick-scalar = { version = "0.1", features = ["glsl"] }
 wick-linalg = { version = "0.1", features = ["glsl"] }
 ```
 
-## dew-scalar
+## wick-scalar
 
 ### Generate Expression
 
@@ -39,7 +39,7 @@ println!("{}", glsl);
 // }
 ```
 
-## dew-linalg
+## wick-linalg
 
 ### Generate with Types
 
@@ -66,7 +66,7 @@ println!("Result type: {:?}", result.typ);
 
 ## Function Mapping
 
-| dew | GLSL |
+| wick | GLSL |
 |-----|------|
 | `lerp(a, b, t)` | `mix(a, b, t)` |
 | `ln(x)` | `log(x)` |

@@ -1,6 +1,6 @@
 # HIP Backend
 
-Generate HIP kernel code from dew expressions for AMD GPUs (ROCm).
+Generate HIP kernel code from wick expressions for AMD GPUs (ROCm).
 
 ## Enable
 
@@ -13,7 +13,7 @@ wick-linalg = { version = "0.1", features = ["hip"] }
 
 HIP (Heterogeneous-compute Interface for Portability) is AMD's GPU programming platform designed to be **source-compatible with CUDA**. The generated HIP code is virtually identical to CUDA output, enabling easy porting between NVIDIA and AMD GPU platforms.
 
-## dew-scalar
+## wick-scalar
 
 ### Generate Expression
 
@@ -43,7 +43,7 @@ println!("{}", hip);
 // }
 ```
 
-## dew-linalg
+## wick-linalg
 
 ### Generate with Types
 
@@ -79,7 +79,7 @@ HIP uses the same syntax as CUDA:
 
 ## Function Mapping
 
-| dew | HIP |
+| wick | HIP |
 |-----|-----|
 | `sin(x)` | `sinf(x)` |
 | `cos(x)` | `cosf(x)` |

@@ -1,6 +1,6 @@
 # Lua Backend
 
-Generate and execute Lua code from dew expressions.
+Generate and execute Lua code from wick expressions.
 
 ## Enable
 
@@ -9,7 +9,7 @@ wick-scalar = { version = "0.1", features = ["lua"] }
 wick-linalg = { version = "0.1", features = ["lua"] }
 ```
 
-## dew-scalar
+## wick-scalar
 
 ### Generate Lua Code
 
@@ -55,7 +55,7 @@ let result = eval_lua(expr.ast(), &vars).unwrap();
 println!("Result: {}", result);
 ```
 
-## dew-linalg
+## wick-linalg
 
 ### Generate with Types
 
@@ -93,7 +93,7 @@ let result = eval_lua(expr.ast(), &vars).unwrap();
 
 ## Function Mapping
 
-| dew | Lua |
+| wick | Lua |
 |-----|-----|
 | `sin(x)` | `math.sin(x)` |
 | `floor(x)` | `math.floor(x)` |

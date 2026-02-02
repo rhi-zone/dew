@@ -32,25 +32,14 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Build WASM
-        run: wasm-pack build crates/dew-wasm --target web --out-dir ../../playground/src/wasm
+        run: |
+          wasm-pack build crates/wick-wasm --target web --out-dir ../../docs/public/wasm
+          rm -f docs/public/wasm/.gitignore docs/public/wasm/package.json
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-
-      - name: Install playground dependencies
-        working-directory: playground
-        run: bun install
-
-      - name: Build playground
-        working-directory: playground
-        run: bun run build
-
-      - name: Copy playground to docs
-        run: |
-          mkdir -p docs/public/playground
-          cp -r playground/dist/* docs/public/playground/
 
       - name: Install docs dependencies
         working-directory: docs

@@ -1,6 +1,6 @@
 # Rust Backend
 
-Generate Rust source code from dew expressions.
+Generate Rust source code from wick expressions.
 
 ## Enable
 
@@ -9,7 +9,7 @@ wick-scalar = { version = "0.1", features = ["rust"] }
 wick-linalg = { version = "0.1", features = ["rust"] }
 ```
 
-## dew-scalar
+## wick-scalar
 
 ### Generate Expression
 
@@ -39,7 +39,7 @@ println!("{}", rust);
 // }
 ```
 
-## dew-linalg
+## wick-linalg
 
 ### Generate with Types
 
@@ -63,7 +63,7 @@ println!("{}", result.code);
 
 ## Function Mapping
 
-| dew | Rust |
+| wick | Rust |
 |-----|------|
 | `sin(x)` | `x.sin()` |
 | `cos(x)` | `x.cos()` |

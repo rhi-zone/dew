@@ -1,23 +1,23 @@
 # Introduction
 
-Dew is a minimal expression language that compiles to multiple backends. Parse once, emit to WGSL/GLSL (GPU shaders), Cranelift (native JIT), or Lua (scripting).
+Wick is a minimal expression language that compiles to multiple backends. Parse once, emit to WGSL/GLSL (GPU shaders), Cranelift (native JIT), or Lua (scripting).
 
 Part of the [rhi](https://rhi-zone.github.io) ecosystem.
 
 ## Architecture
 
 ```
-dew-core               # Syntax only: AST, parsing
+wick-core               # Syntax only: AST, parsing
     |
-    +-- dew-cond       # Conditional backend helpers
+    +-- wick-cond       # Conditional backend helpers
     |
-    +-- dew-scalar     # Scalar domain: f32/f64 math functions
+    +-- wick-scalar     # Scalar domain: f32/f64 math functions
     |
-    +-- dew-linalg     # Linalg domain: Vec2, Vec3, Mat2, Mat3
+    +-- wick-linalg     # Linalg domain: Vec2, Vec3, Mat2, Mat3
     |
-    +-- dew-complex    # Complex numbers: [re, im]
+    +-- wick-complex    # Complex numbers: [re, im]
     |
-    +-- dew-quaternion # Quaternions: [x, y, z, w], Vec3
+    +-- wick-quaternion # Quaternions: [x, y, z, w], Vec3
 ```
 
 All domain crates have multiple backends (feature flags): WGSL, GLSL, OpenCL, CUDA, HIP, Rust, C, TokenStream, Lua, and Cranelift.
@@ -29,7 +29,7 @@ All domain crates have multiple backends (feature flags): WGSL, GLSL, OpenCL, CU
 
 ## Feature Flags
 
-dew-core uses feature flags to manage complexity:
+wick-core uses feature flags to manage complexity:
 
 | Feature | Description |
 |---------|-------------|
@@ -59,7 +59,7 @@ let result = eval(expr.ast(), &vars, &registry).unwrap();
 
 ### With Conditionals
 
-When dew-core is compiled with the `cond` feature:
+When wick-core is compiled with the `cond` feature:
 
 ```rust
 use wick_core::Expr;

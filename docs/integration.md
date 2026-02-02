@@ -1,12 +1,12 @@
 # Integration Guide
 
-How to integrate Dew into your project.
+How to integrate Wick into your project.
 
 ## Game Engines
 
 ### Bevy
 
-Integrate Dew for hot-reloadable game logic or GPU compute shaders.
+Integrate Wick for hot-reloadable game logic or GPU compute shaders.
 
 **Setup:**
 ```toml
@@ -131,7 +131,7 @@ impl AssetLoader for ExpressionLoader {
     }
 
     fn extensions(&self) -> &[&str] {
-        &["dew"]
+        &["wick"]
     }
 }
 ```
@@ -146,12 +146,12 @@ use wasm_bindgen::prelude::*;
 use wick_scalar::{eval, scalar_registry};
 
 #[wasm_bindgen]
-pub struct DewEngine {
+pub struct WickEngine {
     registry: FunctionRegistry<f32, f32>,
 }
 
 #[wasm_bindgen]
-impl DewEngine {
+impl WickEngine {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self {
@@ -174,10 +174,10 @@ impl DewEngine {
 
 **JavaScript:**
 ```javascript
-import init, { DewEngine } from './dew_wasm.js';
+import init, { WickEngine } from './wick_wasm.js';
 
 await init();
-const engine = new DewEngine();
+const engine = new WickEngine();
 
 // Evaluate expression
 const result = engine.eval('sin(x) + cos(y)', { x: 1.0, y: 0.5 });
@@ -197,7 +197,7 @@ function animate(time) {
 ### Three.js / WebGPU
 
 ```javascript
-// Generate WGSL shader from Dew expression
+// Generate WGSL shader from Wick expression
 const shaderCode = engine.emitWGSL(
     'normalize(cross(a, b))',
     { a: 'Vec3', b: 'Vec3' }
@@ -250,12 +250,12 @@ impl ComputePipeline {
         "#, wgsl.code);
 
         let shader_module = device.create_shader_module(ShaderModuleDescriptor {
-            label: Some("dew_compute"),
+            label: Some("wick_compute"),
             source: ShaderSource::Wgsl(shader_code.into()),
         });
 
         let bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            label: Some("dew_compute_layout"),
+            label: Some("wick_compute_layout"),
             entries: &[
                 BindGroupLayoutEntry {
                     binding: 0,
@@ -281,13 +281,13 @@ impl ComputePipeline {
         });
 
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
-            label: Some("dew_compute_layout"),
+            label: Some("wick_compute_layout"),
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
 
         let pipeline = device.create_compute_pipeline(&ComputePipelineDescriptor {
-            label: Some("dew_compute"),
+            label: Some("wick_compute"),
             layout: Some(&pipeline_layout),
             module: &shader_module,
             entry_point: Some("main"),
@@ -376,7 +376,7 @@ float vec3_length(vec3 v);
 vec3 vec3_normalize(vec3 v);
 vec3 vec3_cross(vec3 a, vec3 b);
 
-// Generated Dew code uses these functions
+// Generated Wick code uses these functions
 #include "generated_expressions.c"
 ```
 
@@ -561,7 +561,7 @@ fn test_backend_parity() {
 
 ### Expression Files
 
-**config/formulas.dew:**
+**config/formulas.wick:**
 ```
 # Damage calculation
 damage = (attack * 1.5) * (1 - defense / 100)

@@ -17,28 +17,28 @@ Each domain crate handles its own types during eval/emit.
 
 ### Backends (now self-contained in domain crates)
 
-- [x] dew-scalar: WGSL, Lua, Cranelift backends (self-contained)
-- [x] dew-linalg: WGSL, Lua, Cranelift backends (self-contained)
-- [x] dew-complex: WGSL, Lua, Cranelift backends (self-contained)
-- [x] dew-quaternion: WGSL, Lua, Cranelift backends (self-contained)
+- [x] wick-scalar: WGSL, Lua, Cranelift backends (self-contained)
+- [x] wick-linalg: WGSL, Lua, Cranelift backends (self-contained)
+- [x] wick-complex: WGSL, Lua, Cranelift backends (self-contained)
+- [x] wick-quaternion: WGSL, Lua, Cranelift backends (self-contained)
 
 Note: Old standalone backend crates removed.
 Each domain crate now has self-contained backends behind feature flags.
 
-### Conditionals (dew-cond)
+### Conditionals (wick-cond)
 
-- [x] Conditional AST nodes in dew-core (Compare, And, Or, If, UnaryOp::Not)
-- [x] Feature-gated: `cond` feature in dew-core enables conditional syntax
-- [x] Feature-gated: `func` feature in dew-core enables function calls
-- [x] dew-cond crate with backend helpers (WGSL, Lua, Cranelift)
-- [x] Scalar comparison/conditional support in dew-scalar
+- [x] Conditional AST nodes in wick-core (Compare, And, Or, If, UnaryOp::Not)
+- [x] Feature-gated: `cond` feature in wick-core enables conditional syntax
+- [x] Feature-gated: `func` feature in wick-core enables function calls
+- [x] wick-cond crate with backend helpers (WGSL, Lua, Cranelift)
+- [x] Scalar comparison/conditional support in wick-scalar
 - [x] Scalar-only comparison passthrough in domain crates (complex, linalg, quaternion)
 
 Note: Comparison semantics only for scalars. Complex/quaternion/vector types
 don't have obvious comparison semantics, so they only support scalar comparisons
 via passthrough.
 
-### Standard Library (dew-scalar)
+### Standard Library (wick-scalar)
 
 - [x] Generic over `T: Numeric` (works with f32, f64, i32, i64)
 - [x] Own `ScalarFn<T>` trait and `FunctionRegistry<T>`
@@ -142,7 +142,7 @@ via passthrough.
 
 ### Rust Codegen (AOT)
 
-> **Goal:** Generate Rust source from dew expressions for compile-time optimization.
+> **Goal:** Generate Rust source from wick expressions for compile-time optimization.
 
 **Why Rust output?**
 - rustc optimizes further (LLVM backend)
@@ -163,13 +163,13 @@ via passthrough.
 
 **Implementation approach:**
 - New `emit_rust()` function parallel to `emit_wgsl()`, `emit_lua()`
-- Map dew ops to Rust ops (mostly 1:1 for math)
-- Map dew functions to Rust stdlib or domain-specific impls
+- Map wick ops to Rust ops (mostly 1:1 for math)
+- Map wick functions to Rust stdlib or domain-specific impls
 - Handle type inference to emit typed Rust code
 
 **Example:**
 ```rust
-// Input dew expression
+// Input wick expression
 let expr = parse("sin(x * 3.14159) + cos(y * 2.0)");
 
 // Output Rust code
@@ -187,13 +187,13 @@ expr.to_rust_fn("sample", &[("x", "f32"), ("y", "f32")])
 
 Domain crates are now fully composable:
 - [x] All domain crates are generic over their value type (`V: LinalgValue<T>`, etc.)
-- [x] `dew-all` provides a pre-built combined `Value<T>` type implementing all traits
+- [x] `wick-all` provides a pre-built combined `Value<T>` type implementing all traits
 - [x] Vec3 is shared between linalg and quaternion domains
 - [x] Users can use domain-specific `eval()` functions with the combined Value type
 
-See `crates/dew-all/src/lib.rs` for usage examples.
+See `crates/wick-all/src/lib.rs` for usage examples.
 
-(Historical note: detailed implementation plan accidentally committed, now lives at `~/.claude/plans/dew-domain-composition.md`)
+(Historical note: detailed implementation plan accidentally committed, now lives at `~/.claude/plans/wick-domain-composition.md`)
 
 ### Editor Support
 
@@ -204,7 +204,7 @@ See `crates/dew-all/src/lib.rs` for usage examples.
 
 ### Web Playground
 
-- [ ] WASM build of dew crates (core + domain crates, no cranelift/lua backends)
+- [ ] WASM build of wick crates (core + domain crates, no cranelift/lua backends)
 - [ ] Parser + collapsible AST viewer
 - [ ] Expression runner (interpreter)
 - [ ] Codegen viewer (WGSL, Lua output)
@@ -225,22 +225,22 @@ Style reference: `~/git/lotus/packages/shared/src/index.css` (glassmorphic)
 - Simplest: always enable all features in playground build
 
 **Tooling ideas:**
-- Monaco editor with dew language support (reuse TextMate grammar)
+- Monaco editor with wick language support (reuse TextMate grammar)
 - wasm-bindgen for Rust-JS interop
 - Consider zustand or nanostores for state management
 - AST viewer: use a collapsible tree component (or build one)
 
 ### New Domain Crates
 
-- [x] Complex numbers (2D rotations) - dew-complex
-- [x] Quaternions (3D rotations) - dew-quaternion
+- [x] Complex numbers (2D rotations) - wick-complex
+- [x] Quaternions (3D rotations) - wick-quaternion
 - [ ] Dual numbers (autodiff)
 - [ ] Rotors/spinors (geometric algebra)
 
 ### Expression Optimization (completed)
 
 - [x] Expression normalization/simplification (constant folding, algebraic simplification)
-  - Lives in dew-core behind `optimize` feature
+  - Lives in wick-core behind `optimize` feature
   - Passes: ConstantFolding, AlgebraicIdentities, PowerReduction, FunctionDecomposition
   - CSE utilities via AstHasher (backends implement CSE during emit)
   - Domain crates can add custom passes via `Pass` trait
@@ -255,10 +255,10 @@ Style reference: `~/git/lotus/packages/shared/src/index.css` (glassmorphic)
 Problem: What if a user wants to use multiple domain crates together? E.g., linalg + rotors in the same expression.
 
 Current state:
-- dew-scalar: `T: Float` scalars
-- dew-linalg: `Value<T>` enum (Scalar, Vec2, Vec3, Vec4, Mat2, Mat3, Mat4)
-- dew-complex: `Value<T>` enum (Scalar, Complex)
-- dew-quaternion: `Value<T>` enum (Scalar, Vec3, Quaternion)
+- wick-scalar: `T: Float` scalars
+- wick-linalg: `Value<T>` enum (Scalar, Vec2, Vec3, Vec4, Mat2, Mat3, Mat4)
+- wick-complex: `Value<T>` enum (Scalar, Complex)
+- wick-quaternion: `Value<T>` enum (Scalar, Vec3, Quaternion)
 - Future crates might add: Rotor, DualNumber, etc.
 
 Each has its own `FunctionRegistry<T>` and `eval()` function.
@@ -277,9 +277,9 @@ Options to investigate:
    }
    ```
 3. **Generic over value type**: Each crate is generic over the value abstraction, users compose by providing their own combined type
-4. **Extension trait pattern**: Shared base Value in dew-core, domain crates add methods via traits
-   - **Problem**: Value must have ALL variants in dew-core upfront. Can't add new variants from external crates.
-   - Only viable if dew-core is a monolith knowing all domains. Defeats modularity. **Not recommended.**
+4. **Extension trait pattern**: Shared base Value in wick-core, domain crates add methods via traits
+   - **Problem**: Value must have ALL variants in wick-core upfront. Can't add new variants from external crates.
+   - Only viable if wick-core is a monolith knowing all domains. Defeats modularity. **Not recommended.**
 
 Trade-offs:
 
@@ -325,7 +325,7 @@ Note: Phase 2 is low priority until we have 2+ domain crates that people want to
 
 ### External Backend Support
 
-How to create `dew-linalg-glsl` without modifying dew-linalg.
+How to create `wick-linalg-glsl` without modifying wick-linalg.
 
 #### Pattern: Backends Don't Need Value, Only Type
 
@@ -341,7 +341,7 @@ pub fn emit_wgsl(ast: &Ast, var_types: &HashMap<String, Type>) -> Result<WgslExp
 
 #### Creating an External Backend
 
-Example: `dew-linalg-glsl` crate
+Example: `wick-linalg-glsl` crate
 
 ```toml
 [dependencies]

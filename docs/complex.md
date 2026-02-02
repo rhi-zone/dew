@@ -1,6 +1,6 @@
-# dew-complex
+# wick-complex
 
-Complex number support for dew expressions. Useful for signal processing, 2D rotations, and general complex arithmetic.
+Complex number support for wick expressions. Useful for signal processing, 2D rotations, and general complex arithmetic.
 
 ## Installation
 

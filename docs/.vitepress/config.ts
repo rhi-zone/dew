@@ -1,27 +1,38 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
-import dewGrammar from '../../editors/textmate/dew.tmLanguage.json'
+import wickGrammar from '../../editors/textmate/wick.tmLanguage.json'
 
 export default withMermaid(
   defineConfig({
     vite: {
       optimizeDeps: {
         include: ['mermaid'],
+        exclude: ['wick_wasm'],
+      },
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks(id) {
+              if (id.includes('monaco-editor')) return 'monaco'
+              if (id.includes('playground')) return 'playground'
+            },
+          },
+        },
       },
     },
     markdown: {
-      languages: [dewGrammar as any],
+      languages: [wickGrammar as any],
     },
-    title: 'Dew',
+    title: 'Wick',
     description: 'Minimal expression language with multiple backends',
 
-    base: '/dew/',
+    base: '/wick/',
 
     themeConfig: {
       nav: [
         { text: 'Guide', link: '/introduction' },
         { text: 'Backends', link: '/backends/wgsl' },
-        { text: 'Playground', link: '/playground/', target: '_self' },
+        { text: 'Playground', link: '/playground' },
         { text: 'rhi', link: 'https://docs.rhi.zone/' },
       ],
 
@@ -39,11 +50,11 @@ export default withMermaid(
           {
             text: 'Crates',
             items: [
-              { text: 'dew-core', link: '/core' },
-              { text: 'dew-scalar', link: '/scalar' },
-              { text: 'dew-linalg', link: '/linalg' },
-              { text: 'dew-complex', link: '/complex' },
-              { text: 'dew-quaternion', link: '/quaternion' },
+              { text: 'wick-core', link: '/core' },
+              { text: 'wick-scalar', link: '/scalar' },
+              { text: 'wick-linalg', link: '/linalg' },
+              { text: 'wick-complex', link: '/complex' },
+              { text: 'wick-quaternion', link: '/quaternion' },
             ]
           },
           {
@@ -71,7 +82,7 @@ export default withMermaid(
       },
 
       socialLinks: [
-        { icon: 'github', link: 'https://github.com/rhi-zone/dew' }
+        { icon: 'github', link: 'https://github.com/rhi-zone/wick' }
       ],
 
       search: {
@@ -79,7 +90,7 @@ export default withMermaid(
       },
 
       editLink: {
-        pattern: 'https://github.com/rhi-zone/dew/edit/master/docs/:path',
+        pattern: 'https://github.com/rhi-zone/wick/edit/master/docs/:path',
         text: 'Edit this page on GitHub'
       },
     },

@@ -1,5 +1,5 @@
 {
-  "name": "sap-docs",
+  "name": "wick-docs",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "mermaid": "^11.12.2",
+    "monaco-editor": "^0.52.2",
     "vitepress-plugin-mermaid": "^2.0.17"
   }
 }
