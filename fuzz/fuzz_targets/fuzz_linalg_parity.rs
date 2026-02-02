@@ -1,6 +1,6 @@
 #![no_main]
 
-//! Type-aware fuzzer for dew-linalg backend parity.
+//! Type-aware fuzzer for wick-linalg backend parity.
 //!
 //! Generates expressions that are always well-typed, tracking types through
 //! the expression tree to ensure valid operations.

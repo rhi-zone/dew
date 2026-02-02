@@ -1,6 +1,6 @@
 # WGSL Backend
 
-Generate WebGPU Shading Language code from dew expressions.
+Generate WebGPU Shading Language code from wick expressions.
 
 ## Enable
 
@@ -9,7 +9,7 @@ wick-scalar = { version = "0.1", features = ["wgsl"] }
 wick-linalg = { version = "0.1", features = ["wgsl"] }
 ```
 
-## dew-scalar
+## wick-scalar
 
 ### Generate Expression
 
@@ -39,7 +39,7 @@ println!("{}", wgsl);
 // }
 ```
 
-## dew-linalg
+## wick-linalg
 
 ### Generate with Types
 
@@ -66,7 +66,7 @@ println!("Result type: {:?}", result.typ);
 
 ## Function Mapping
 
-| dew | WGSL |
+| wick | WGSL |
 |-----|------|
 | `lerp(a, b, t)` | `mix(a, b, t)` |
 | `ln(x)` | `log(x)` |

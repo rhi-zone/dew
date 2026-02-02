@@ -1,6 +1,6 @@
 # TokenStream Backend
 
-Generate `proc_macro2::TokenStream` from dew expressions for use in Rust proc-macros.
+Generate `proc_macro2::TokenStream` from wick expressions for use in Rust proc-macros.
 
 ## Enable
 
@@ -9,7 +9,7 @@ wick-scalar = { version = "0.1", features = ["tokenstream"] }
 wick-linalg = { version = "0.1", features = ["tokenstream"] }
 ```
 
-## dew-scalar
+## wick-scalar
 
 ### Generate TokenStream
 
@@ -24,7 +24,7 @@ let tokens = emit_tokenstream(expr.ast()).unwrap();
 // Output equivalent: (x.sin() + y.cos())
 ```
 
-## dew-linalg
+## wick-linalg
 
 ### Generate with Types (glam-compatible)
 
@@ -50,7 +50,7 @@ let result = emit_tokenstream(expr.ast(), &var_types).unwrap();
 
 The linalg backend emits code compatible with the [glam](https://docs.rs/glam) math library:
 
-| dew Type | glam Type |
+| wick Type | glam Type |
 |----------|-----------|
 | Scalar | `f32` |
 | Vec2 | `Vec2` |
@@ -63,10 +63,10 @@ The linalg backend emits code compatible with the [glam](https://docs.rs/glam) m
 ### Vector Constructors
 
 ```rust
-// dew: vec2(x, y)
+// wick: vec2(x, y)
 // Output: Vec2::new(x, y)
 
-// dew: vec3(x, y, z)
+// wick: vec3(x, y, z)
 // Output: Vec3::new(x, y, z)
 ```
 
@@ -75,19 +75,19 @@ The linalg backend emits code compatible with the [glam](https://docs.rs/glam) m
 TokenStream output uses Rust method syntax:
 
 ```rust
-// dew: dot(a, b)
+// wick: dot(a, b)
 // Output: a.dot(b)
 
-// dew: normalize(v)
+// wick: normalize(v)
 // Output: v.normalize()
 
-// dew: lerp(a, b, t)
+// wick: lerp(a, b, t)
 // Output: a.lerp(b, t)
 ```
 
 ## Function Mapping
 
-| dew | TokenStream Output |
+| wick | TokenStream Output |
 |-----|-------------------|
 | `sin(x)` | `x.sin()` |
 | `cos(x)` | `x.cos()` |
@@ -113,9 +113,9 @@ use wick_core::Expr;
 use wick_scalar::tokenstream::emit_tokenstream;
 
 #[proc_macro]
-pub fn dew(input: TokenStream) -> TokenStream {
+pub fn wick(input: TokenStream) -> TokenStream {
     let expr_str = input.to_string();
-    let expr = Expr::parse(&expr_str).expect("invalid dew expression");
+    let expr = Expr::parse(&expr_str).expect("invalid wick expression");
     let tokens = emit_tokenstream(expr.ast()).expect("codegen failed");
 
     quote! {

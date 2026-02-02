@@ -1,6 +1,6 @@
-# dew-core
+# wick-core
 
-The foundational crate providing the AST, parser, and base types for dew expressions.
+The foundational crate providing the AST, parser, and base types for wick expressions.
 
 ## Installation
 
@@ -14,7 +14,7 @@ wick-core = { version = "0.1", features = ["cond", "func"] }
 
 ## Features
 
-dew-core provides opt-in features to manage complexity:
+wick-core provides opt-in features to manage complexity:
 
 | Feature | Description |
 |---------|-------------|
@@ -262,11 +262,11 @@ See the [Optimization Guide](/optimization) for details.
 
 ## Combining with Domain Crates
 
-dew-core is syntax-only. Domain crates add semantics:
+wick-core is syntax-only. Domain crates add semantics:
 
-- **dew-scalar**: Scalar math functions (sin, cos, exp, etc.)
-- **dew-linalg**: Linear algebra (Vec2, Vec3, Mat2, Mat3)
-- **dew-complex**: Complex numbers
-- **dew-quaternion**: Quaternions for 3D rotation
+- **wick-scalar**: Scalar math functions (sin, cos, exp, etc.)
+- **wick-linalg**: Linear algebra (Vec2, Vec3, Mat2, Mat3)
+- **wick-complex**: Complex numbers
+- **wick-quaternion**: Quaternions for 3D rotation
 
 All domain crates require the `func` feature (they depend on function calls).

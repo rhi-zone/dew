@@ -1,6 +1,6 @@
-# dew-linalg
+# wick-linalg
 
-Linear algebra types and operations for dew expressions.
+Linear algebra types and operations for wick expressions.
 
 ## Installation
 

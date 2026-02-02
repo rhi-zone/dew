@@ -1,5 +1,5 @@
 [package]
-name = "dew-fuzz"
+name = "wick-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2021"
@@ -12,23 +12,23 @@ libfuzzer-sys = "0.4"
 arbitrary = { version = "1", features = ["derive"] }
 
 [dependencies.wick-core]
-path = "../crates/dew-core"
+path = "../crates/wick-core"
 features = ["cond", "func"]
 
 [dependencies.wick-scalar]
-path = "../crates/dew-scalar"
+path = "../crates/wick-scalar"
 features = ["lua", "cranelift"]
 
 [dependencies.wick-linalg]
-path = "../crates/dew-linalg"
+path = "../crates/wick-linalg"
 features = ["lua", "cranelift"]
 
 [dependencies.wick-complex]
-path = "../crates/dew-complex"
+path = "../crates/wick-complex"
 features = ["lua", "cranelift"]
 
 [dependencies.wick-quaternion]
-path = "../crates/dew-quaternion"
+path = "../crates/wick-quaternion"
 features = ["lua", "cranelift"]
 
 [[bin]]

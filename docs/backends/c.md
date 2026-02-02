@@ -1,6 +1,6 @@
 # C Backend
 
-Generate C source code from dew expressions.
+Generate C source code from wick expressions.
 
 ## Enable
 
@@ -9,7 +9,7 @@ wick-scalar = { version = "0.1", features = ["c"] }
 wick-linalg = { version = "0.1", features = ["c"] }
 ```
 
-## dew-scalar
+## wick-scalar
 
 ### Generate Expression
 
@@ -41,7 +41,7 @@ println!("{}", c);
 
 ## Function Mapping
 
-| dew | C |
+| wick | C |
 |-----|---|
 | `sin(x)` | `sinf(x)` |
 | `cos(x)` | `cosf(x)` |

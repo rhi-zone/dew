@@ -1,6 +1,6 @@
 # CUDA Backend
 
-Generate CUDA kernel code from dew expressions for NVIDIA GPUs.
+Generate CUDA kernel code from wick expressions for NVIDIA GPUs.
 
 ## Enable
 
@@ -9,7 +9,7 @@ wick-scalar = { version = "0.1", features = ["cuda"] }
 wick-linalg = { version = "0.1", features = ["cuda"] }
 ```
 
-## dew-scalar
+## wick-scalar
 
 ### Generate Expression
 
@@ -39,7 +39,7 @@ println!("{}", cuda);
 // }
 ```
 
-## dew-linalg
+## wick-linalg
 
 ### Generate with Types
 
@@ -67,7 +67,7 @@ println!("{}", result.code);
 
 CUDA provides native vector types:
 
-| dew Type | CUDA Type |
+| wick Type | CUDA Type |
 |----------|-----------|
 | Scalar | `float` |
 | Vec2 | `float2` |
@@ -118,7 +118,7 @@ Alternatively, include CUDA's `helper_math.h` for operator overloading.
 
 ## Function Mapping
 
-| dew | CUDA |
+| wick | CUDA |
 |-----|------|
 | `sin(x)` | `sinf(x)` |
 | `cos(x)` | `cosf(x)` |

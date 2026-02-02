@@ -1,4 +1,4 @@
-# Dew
+# Wick
 
 Minimal expression language, multiple backends.
 
@@ -6,7 +6,7 @@ Part of the [rhi](https://rhi-zone.github.io) ecosystem.
 
 ## Overview
 
-Dew is a minimal expression language that compiles to multiple backends. Small, ephemeral, perfectly formed—like a droplet condensed from logic. Parse once, emit to WGSL (GPU shaders), Cranelift (native JIT), or Lua (scripting).
+Wick is a minimal expression language that compiles to multiple backends. Small, ephemeral, perfectly formed—like a droplet condensed from logic. Parse once, emit to WGSL (GPU shaders), Cranelift (native JIT), or Lua (scripting).
 
 ## Crates
 
@@ -42,17 +42,17 @@ Each domain crate includes self-contained backends (feature flags):
 ## Architecture
 
 ```
-dew-core               # Syntax only: AST, parsing
+wick-core               # Syntax only: AST, parsing
     |
-    +-- dew-cond       # Conditional backend helpers
+    +-- wick-cond       # Conditional backend helpers
     |
-    +-- dew-scalar     # Scalar domain: f32/f64 math functions
+    +-- wick-scalar     # Scalar domain: f32/f64 math functions
     |
-    +-- dew-linalg     # Linalg domain: Vec2, Vec3, Mat2, Mat3
+    +-- wick-linalg     # Linalg domain: Vec2, Vec3, Mat2, Mat3
     |
-    +-- dew-complex    # Complex numbers: [re, im]
+    +-- wick-complex    # Complex numbers: [re, im]
     |
-    +-- dew-quaternion # Quaternions: [x, y, z, w], Vec3
+    +-- wick-quaternion # Quaternions: [x, y, z, w], Vec3
 ```
 
 Domain crates are independent. Each has:
@@ -72,11 +72,11 @@ Domain crates are independent. Each has:
 - Robust parser with property-based testing
 
 **Domain Crates:**
-- `dew-scalar` - Scalar math (sin, cos, exp, lerp, etc.)
-- `dew-linalg` - Linear algebra (Vec2-4, Mat2-4, dot, cross, normalize, etc.)
-- `dew-complex` - Complex numbers (exp, log, polar, conjugate, etc.)
-- `dew-quaternion` - Quaternions (rotation, slerp, axis-angle, etc.)
-- `dew-all` - Unified value type for domain composition
+- `wick-scalar` - Scalar math (sin, cos, exp, lerp, etc.)
+- `wick-linalg` - Linear algebra (Vec2-4, Mat2-4, dot, cross, normalize, etc.)
+- `wick-complex` - Complex numbers (exp, log, polar, conjugate, etc.)
+- `wick-quaternion` - Quaternions (rotation, slerp, axis-angle, etc.)
+- `wick-all` - Unified value type for domain composition
 
 **Code Generation:**
 - WGSL backend (all domain crates)
@@ -110,7 +110,7 @@ Domain crates are independent. Each has:
 - Rotors/spinors (geometric algebra)
 
 **External Backend Support:**
-- Pattern for external codegen crates (e.g., `dew-linalg-metal`)
+- Pattern for external codegen crates (e.g., `wick-linalg-metal`)
 - Shared type inference utilities across backends
 
 See `TODO.md` for detailed implementation tracking.

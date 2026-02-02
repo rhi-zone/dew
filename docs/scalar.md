@@ -1,6 +1,6 @@
-# dew-scalar
+# wick-scalar
 
-Standard scalar math functions for dew expressions.
+Standard scalar math functions for wick expressions.
 
 ## Installation
 

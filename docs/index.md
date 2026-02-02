@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: Dew
+  name: Wick
   text: Minimal Expression Language
   tagline: Parse once, compile to WGSL, GLSL, C, Rust, Cranelift, or Lua
   actions:
@@ -11,7 +11,7 @@ hero:
       link: /introduction
     - theme: alt
       text: View on GitHub
-      link: https://github.com/rhi-zone/dew
+      link: https://github.com/rhi-zone/wick
 
 features:
   - title: Domain Crates

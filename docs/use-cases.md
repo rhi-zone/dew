@@ -1,12 +1,12 @@
 # Use Cases
 
-Real-world applications and patterns for Dew expressions.
+Real-world applications and patterns for Wick expressions.
 
 ## GPU Shaders
 
 ### Procedural Generation
 
-Generate complex procedural patterns once in Dew, compile to WGSL for GPU execution.
+Generate complex procedural patterns once in Wick, compile to WGSL for GPU execution.
 
 **Before (manual WGSL):**
 ```wgsl
@@ -27,7 +27,7 @@ fn noise_octaves(p: vec2<f32>, octaves: i32) -> f32 {
 }
 ```
 
-**After (Dew):**
+**After (Wick):**
 ```rust
 use wick_linalg::{emit_wgsl, Type};
 
@@ -89,7 +89,7 @@ let expr = Expr::parse(r#"
 
 ### Audio Effects with Complex Numbers
 
-Complex numbers in Dew are perfect for frequency-domain audio processing.
+Complex numbers in Wick are perfect for frequency-domain audio processing.
 
 ```rust
 use wick_complex::{Value, eval, complex_registry};
@@ -390,7 +390,7 @@ let result = eval_lua(expr.ast(), &vars).unwrap();
 
 ## Summary
 
-Dew shines when you need:
+Wick shines when you need:
 - **Cross-platform math** - Write once, run on CPU/GPU/web
 - **Hot-reloadable logic** - Update expressions without recompiling
 - **Domain-specific expressions** - GPU shaders, signal processing, 3D transforms

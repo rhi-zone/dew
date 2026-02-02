@@ -1,6 +1,6 @@
 # OpenCL Backend
 
-Generate OpenCL kernel code from dew expressions.
+Generate OpenCL kernel code from wick expressions.
 
 ## Enable
 
@@ -9,7 +9,7 @@ wick-scalar = { version = "0.1", features = ["opencl"] }
 wick-linalg = { version = "0.1", features = ["opencl"] }
 ```
 
-## dew-scalar
+## wick-scalar
 
 ### Generate Expression
 
@@ -39,7 +39,7 @@ println!("{}", ocl);
 // }
 ```
 
-## dew-linalg
+## wick-linalg
 
 ### Generate with Types
 
@@ -67,7 +67,7 @@ println!("{}", result.code);
 
 OpenCL provides native vector types:
 
-| dew Type | OpenCL Type |
+| wick Type | OpenCL Type |
 |----------|-------------|
 | Scalar | `float` |
 | Vec2 | `float2` |
@@ -78,7 +78,7 @@ OpenCL provides native vector types:
 
 OpenCL has built-in functions for common vector operations:
 
-| dew | OpenCL |
+| wick | OpenCL |
 |-----|--------|
 | `dot(a, b)` | `dot(a, b)` |
 | `cross(a, b)` | `cross(a, b)` |
@@ -97,7 +97,7 @@ OpenCL has built-in functions for common vector operations:
 
 ## Function Mapping
 
-| dew | OpenCL |
+| wick | OpenCL |
 |-----|--------|
 | `sin(x)` | `sin(x)` |
 | `cos(x)` | `cos(x)` |

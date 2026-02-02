@@ -1,6 +1,6 @@
 # Cranelift Backend
 
-JIT compile dew expressions to native code via Cranelift.
+JIT compile wick expressions to native code via Cranelift.
 
 ## Enable
 
@@ -9,7 +9,7 @@ wick-scalar = { version = "0.1", features = ["cranelift"] }
 wick-linalg = { version = "0.1", features = ["cranelift"] }
 ```
 
-## dew-scalar
+## wick-scalar
 
 ### Compile and Execute
 
@@ -42,7 +42,7 @@ for i in 0..1000 {
 }
 ```
 
-## dew-linalg
+## wick-linalg
 
 ### Compile with Types
 

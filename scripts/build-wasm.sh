@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Build WASM profiles for dew playground
+# Build WASM profiles for wick playground
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WASM_CRATE="$SCRIPT_DIR/../crates/dew-wasm"
-OUT_DIR="$SCRIPT_DIR/../playground/dist/wasm"
+WASM_CRATE="$SCRIPT_DIR/../crates/wick-wasm"
+OUT_DIR="$SCRIPT_DIR/../docs/public/wasm"
 
 # Profiles: name -> cargo features
 declare -A PROFILES=(

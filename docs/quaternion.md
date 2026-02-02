@@ -1,6 +1,6 @@
-# dew-quaternion
+# wick-quaternion
 
-Quaternion support for dew expressions. Essential for 3D rotations, avoiding gimbal lock.
+Quaternion support for wick expressions. Essential for 3D rotations, avoiding gimbal lock.
 
 ## Installation
 

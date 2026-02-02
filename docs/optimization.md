@@ -1,10 +1,10 @@
 # Expression Optimization
 
-This document describes dew's expression optimization system: design decisions, available passes, and how to extend it.
+This document describes wick's expression optimization system: design decisions, available passes, and how to extend it.
 
 ## Overview
 
-Dew provides optional expression optimization that transforms ASTs before evaluation or code generation. Optimizations reduce runtime computation by simplifying expressions at compile time.
+Wick provides optional expression optimization that transforms ASTs before evaluation or code generation. Optimizations reduce runtime computation by simplifying expressions at compile time.
 
 ```rust
 use wick_core::{Expr, optimize};
@@ -119,7 +119,7 @@ wick-core = { version = "...", features = ["optimize"] }
 Rationale:
 - Not everyone needs optimization (interpreted use cases, simple expressions)
 - Keeps compile time down for minimal builds
-- Opt-in complexity (dew philosophy)
+- Opt-in complexity (wick philosophy)
 
 ## Available Passes
 
@@ -190,7 +190,7 @@ impl ExprFn for Log10 {
 }
 ```
 
-**Requires**: `func` feature enabled in dew-core.
+**Requires**: `func` feature enabled in wick-core.
 
 **Use case**: Backends that don't support a function natively can still work if the function decomposes to supported operations.
 
@@ -198,7 +198,7 @@ impl ExprFn for Log10 {
 
 Domain crates provide additional optimization passes for their types:
 
-### dew-scalar (feature = "optimize")
+### wick-scalar (feature = "optimize")
 
 `ScalarConstantFolding` evaluates scalar functions at compile time:
 
@@ -214,7 +214,7 @@ passes.push(&ScalarConstantFolding);
 
 Supported: all standard math functions (sin, cos, sqrt, exp, log, etc.)
 
-### dew-linalg (feature = "optimize")
+### wick-linalg (feature = "optimize")
 
 `LinalgConstantFolding` evaluates vector operations at compile time:
 
@@ -234,7 +234,7 @@ passes.push(&LinalgConstantFolding);
 where vector types are visible in the AST (e.g., `vec2(...)` calls). Operations on
 typed variables like `a + b` where `a, b: Vec3` are not yet optimized.
 
-### dew-complex (feature = "optimize")
+### wick-complex (feature = "optimize")
 
 `ComplexConstantFolding` evaluates complex number operations at compile time:
 
@@ -253,7 +253,7 @@ passes.push(&ComplexConstantFolding);
 Uses `complex(re, im)` or `polar(r, theta)` as constructors for complex values.
 Supports: re, im, conj, abs, arg, norm, exp, log, sqrt, pow.
 
-### dew-quaternion (feature = "optimize")
+### wick-quaternion (feature = "optimize")
 
 `QuaternionConstantFolding` evaluates quaternion and vector operations at compile time:
 
