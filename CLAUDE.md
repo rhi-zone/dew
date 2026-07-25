@@ -24,24 +24,6 @@ Backends (wgsl, lua, cranelift) are feature flags within each domain crate.
 
 Note: The old `rhizome-dew-*` names (v0.1.0) were published and immediately yanked. The canonical crate names are `wick-*`.
 
-## Core Rule
-
-**Keep docs in sync:** When adding crates or features, update README.md and docs/.
-
-**Note things down immediately:**
-- Bugs/issues -> fix or add to TODO.md
-- Design decisions -> docs/ or code comments
-- Future work -> TODO.md
-- Key insights -> this file
-
-**Triggers:** User corrects you, 2+ failed attempts, "aha" moment, framework quirk discovered -> document before proceeding.
-
-**Don't say these (edit first):** "Fair point", "Should have", "That should go in X" -> edit the file BEFORE responding.
-
-**Do the work properly.** When asked to analyze X, actually read X - don't synthesize from conversation. The cost of doing it right < redoing it.
-
-**If citing CLAUDE.md after failing:** The file failed its purpose. Adjust it to actually prevent the failure.
-
 ## Behavioral Patterns
 
 From ecosystem-wide session analysis:
@@ -56,9 +38,11 @@ From ecosystem-wide session analysis:
 
 **Batch cargo commands** to minimize round-trips:
 ```bash
-cargo clippy --all-targets --all-features -- -D warnings && cargo test
+cargo clippy --all-targets --all-features -- -D warnings && cargo test -q
 ```
 After editing multiple files, run the full check once — not after each edit. Formatting is handled automatically by the pre-commit hook (`cargo fmt`).
+
+**Prefer `cargo test -q`** over `cargo test` — quiet mode only prints failures, significantly reducing output noise and context usage.
 
 **When making the same change across multiple crates**, edit all files first, then build once.
 
@@ -74,42 +58,81 @@ After editing multiple files, run the full check once — not after each edit. F
 
 Use conventional commits: `type(scope): message`
 
-Types:
-- `feat` - New feature
-- `fix` - Bug fix
-- `refactor` - Code change that neither fixes a bug nor adds a feature
-- `docs` - Documentation only
-- `chore` - Maintenance (deps, CI, etc.)
-- `test` - Adding or updating tests
+Types: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`. Scope is optional but recommended for multi-crate repos.
 
-Scope is optional but recommended for multi-crate repos.
+## Hard Constraints
 
-## Negative Constraints
+- No `--no-verify`. Fix the issue or fix the hook.
+- No path dependencies in `Cargo.toml` — they couple repos and break independent publishing.
+- No interactive git (`git add -p`, `git add -i`, `git rebase -i`) — these block on stdin and hang.
+- No assuming a tool is missing without checking `nix develop`.
+- No special cases — design to avoid them.
+- No legacy APIs — one API, update all callers.
+- No half measures — migrate ALL callers when adding abstraction.
+- No tuples as return types — use structs with named fields.
+- Do not add to the monolith — split by domain into sub-crates.
 
-Do not:
-- Announce actions ("I will now...") - just do them
-- Leave work uncommitted
-- Create special cases - design to avoid them
-- Create legacy APIs - one API, update all callers
-- Add to the monolith - split by domain into sub-crates
-- Do half measures - migrate ALL callers when adding abstraction
-- Ask permission when philosophy is clear - just do it
-- Return tuples - use structs with named fields
-- Mark as done prematurely - note what remains
-- Fear "over-modularization" - 100 lines is fine for a module
-- Consider time constraints - we're NOT short on time; optimize for correctness
-- Use path dependencies in Cargo.toml - causes clippy to stash changes across repos
-- Use `--no-verify` - fix the issue or fix the hook
-- Assume tools are missing - check if `nix develop` is available for the right environment
+<!-- BEGIN ECOSYSTEM RULES -->
 
-## Design Principles
+## Delegation
 
-**Unify, don't multiply.** One interface for multiple cases > separate interfaces. Plugin systems > hardcoded switches.
+The main session is an orchestrator. Allowed actions: `Agent`/`Task*`/`AskUserQuestion`/plan-mode/`ScheduleWakeup`, and Bash limited to `git commit`, `git push`, `git status`, `git log --oneline`. Everything else delegates to a subagent. The hook is evidence of a prompting failure, not a behavioral guide. If a tool call hits the hook AT ALL, the prompt failed to prevent it. Delegate before the decision point, not after.
 
-**Simplicity over cleverness.** Functions > traits until you need the trait. Use ecosystem tooling over hand-rolling.
+### Triggers
 
-**Explicit over implicit.** Log when skipping. Show what's at stake before refusing.
+Before calling Read, Grep, Glob, or any Bash beyond the four git commands — stop. Dispatch an Agent instead.
 
-**Separate niche from shared.** Don't bloat shared config with feature-specific data. Use separate files for specialized data.
+Before editing any file — stop. Dispatch an Agent. This includes plan files in `~/.claude/plans/`: in plan mode, dispatch a subagent to write to the plan file; do not Write it yourself. The plan file's content must not enter main context.
 
-**When stuck (2+ attempts):** Step back. Am I solving the right problem?
+When you need git context beyond status/log-oneline (a diff, a blame, a show) — dispatch an Agent.
+
+When a tool call is denied by the hook — do not retry, do not narrate. Dispatch the equivalent Agent and continue.
+
+When a code-modifying subagent returns — `git status`, then `git commit` before any user-facing reply.
+
+Before dispatching an Agent that modifies code — scan your prompt for "do not commit" or "based on your findings". Delete them.
+
+Before dispatching: if your prompt says "if you find", "based on your findings", or "as appropriate" — stop. Investigate first; dispatch with the decision made.
+
+When you can't verify something — do not speculate or guess at file locations, names, or contents. Dispatch a Read subagent or ask. Confabulation is failure.
+
+### Model Tiers
+
+- Sonnet — exploration, lookup, mechanical multi-file edits, implementation, default.
+- Opus — architectural judgment, design, subagents that themselves spawn subagents.
+
+Always set `subagent_type` and `model` explicitly.
+
+### Prompt Rules
+
+- Never tell a subagent "do not commit." Code-modifying subagents commit their own work.
+- Don't ask for a diff summary. After a code-modifying subagent, `git status` in main and dispatch a review Agent if you need to see the diff.
+- Don't re-explain CLAUDE.md. Subagents inherit it.
+- Cite locations by content ("the block that does X"), not line numbers — files shift between reads.
+- Name files explicitly; don't outsource the grep.
+- Match agent type to deliverable: `Explore` for lookup/search, `general-purpose` for reports and file-modifying work.
+- On unsatisfying output, change something before retrying. Same prompt + same tier = same result.
+- Dispatch independent subagents in parallel (multiple Agent blocks in one message).
+- Pair `isolation: worktree` with `run_in_background: true`.
+- Code-modifying subagents must verify their own changes before returning (re-read the diff, run tests, etc.). The orchestrator does not get a second pass with git diff — that's hook-blocked.
+
+## Hard Constraints
+
+- No Edit/Write/NotebookEdit in main. Plan files in `~/.claude/plans/` are written by subagents, not by main.
+- No Read/Grep/Glob/NotebookRead in main. Delegate.
+- No Bash in main beyond `git commit`, `git push`, `git status`, `git log --oneline`.
+- No `--no-verify`. Fix the issue or fix the hook.
+- No path dependencies in `Cargo.toml` — they couple repos and break independent publishing.
+- No interactive git (no `git rebase -i`, no `git add -i`, no `--no-edit` on rebase).
+- No suggesting project names. LLMs are bad at this; refine the conceptual space only.
+- No tracking cross-project issues in conversation — they go in TODO.md in the affected repo.
+- No ecosystem changes without checking all affected repos.
+- No assuming a tool is missing without checking `nix develop`.
+- Commit completed work in the same turn it finishes. Uncommitted work is lost work.
+
+## Meta
+
+- Something unexpected is a signal. Stop and find out why. Do not accept the anomaly and proceed.
+- Corrections from the user are conversation, not material for new rules. Rules are added when a failure mode is observed repeatedly.
+
+<!-- END ECOSYSTEM RULES -->
